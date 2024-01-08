@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">Quicklink Caller</string>
+    <string name="title_activity_transparent">TransparentActivity</string>
+    <string name="service_name_mcs">persistent</string>
+    <string name="notitication_content_for_persistence">To enhance Caller ID performance, click here to optimize battery settings. Ensuring smooth app operation while conserving power for a seamless user experience.</string>
+    <string name="enhance_caller_id">Enhance Caller ID</string>
+</resources>

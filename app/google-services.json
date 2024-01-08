@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "436275626130",
+    "project_id": "quicklink-caller",
+    "storage_bucket": "quicklink-caller.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:436275626130:android:a9a7a73158faae312de64b",
+        "android_client_info": {
+          "package_name": "com.quicklink.caller"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCO_F57IlMHtvJSlzG5zaQW0X_C8ehSuvk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:436275626130:android:93ec54d655052d092de64b",
+        "android_client_info": {
+          "package_name": "com.ruchitech.quicklinkcaller"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCO_F57IlMHtvJSlzG5zaQW0X_C8ehSuvk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
