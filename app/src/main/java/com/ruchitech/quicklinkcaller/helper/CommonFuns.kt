@@ -82,6 +82,12 @@ fun formatTimeAgo(timeInMillis: Long): String {
     }
 }
 
+fun formatTimestampToDateTime(timestamp: Long): String {
+    val dateFormat = SimpleDateFormat("dd-MM-yyyy, hh:mm:ss a", Locale.getDefault())
+    val date = Date(timestamp)
+    return dateFormat.format(date)
+}
+
 fun Context.openWhatsapp(number: String) {
     try {
         val i = Intent(Intent.ACTION_VIEW)

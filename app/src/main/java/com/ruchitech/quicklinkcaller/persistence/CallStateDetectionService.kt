@@ -28,6 +28,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.ruchitech.quicklinkcaller.MyApp
 import com.ruchitech.quicklinkcaller.R
+import com.ruchitech.quicklinkcaller.helper.AppPreference
 import com.ruchitech.quicklinkcaller.helper.AppPreferences
 import com.ruchitech.quicklinkcaller.helper.Logger
 import com.ruchitech.quicklinkcaller.helper.isServiceRunning
@@ -46,9 +47,11 @@ import com.ruchitech.quicklinkcaller.persistence.McsConstants.ZERO
 import com.ruchitech.quicklinkcaller.persistence.foreground_notification.ForegroundServiceContext
 import com.ruchitech.quicklinkcaller.persistence.recievers.ServiceControlReceiver
 import com.ruchitech.quicklinkcaller.persistence.recievers.TriggerReceiver
+import com.ruchitech.quicklinkcaller.room.DbRepository
 import com.ruchitech.quicklinkcaller.ui.screens.callerid.service.CallerIdService
 import com.ruchitech.quicklinkcaller.ui.screens.callerid.service.stopAppCallerIdService
 import com.ruchitech.quicklinkcaller.ui.screens.settings.AllCallerIdOptions
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -58,7 +61,9 @@ import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class CallStateDetectionService : Service(), Handler.Callback {
     private var connectIntent: Intent? = null
     private var powerManager: PowerManager? = null
@@ -76,14 +81,19 @@ class CallStateDetectionService : Service(), Handler.Callback {
     private val serviceJob by lazy { Job() }
     private val serviceScope by lazy { CoroutineScope(Dispatchers.IO + serviceJob) }
 
+    @Inject
+    lateinit var dbRepository: DbRepository
 
+    @Inject
+    lateinit var appPreference: AppPreference
+    
     override fun onBind(intent: Intent): IBinder? {
         return null
     }
 
     override fun onCreate() {
         super.onCreate()
-        MyApp.instance.appPreference.lastHearBeatTime = 0L
+     appPreference.lastHearBeatTime = 0L
         val logFile = File(getExternalFilesDir(null), "app_log.txt")
         logger = Logger("YourTag", logFile)
         TriggerReceiver.register(this)
@@ -149,11 +159,11 @@ class CallStateDetectionService : Service(), Handler.Callback {
 
     }
 
-    fun isIncomingCallsEnabled(): Boolean {
+    suspend fun isIncomingCallsEnabled(): Boolean {
         var value = false
         serviceScope.launch {
             value =
-                MyApp.instance.dbRepository.callerIDOptions.getCallerIdOptions()?.callerIdOptions?.contains(
+                dbRepository.callerIDOptions.getCallerIdOptions()?.callerIdOptions?.contains(
                     AllCallerIdOptions.Incoming
                 ) == true
         }
@@ -165,10 +175,10 @@ class CallStateDetectionService : Service(), Handler.Callback {
         var value = false
         Log.e(
             "fjhdgfj",
-            "isIncomingCallsEnabled: ${MyApp.instance.dbRepository.callerIDOptions.getCallerIdOptions()?.callerIdOptions}"
+            "isIncomingCallsEnabled: ${dbRepository.callerIDOptions.getCallerIdOptions()?.callerIdOptions}"
         )
         value =
-            MyApp.instance.dbRepository.callerIDOptions.getCallerIdOptions()?.callerIdOptions?.contains(
+            dbRepository.callerIDOptions.getCallerIdOptions()?.callerIdOptions?.contains(
                 AllCallerIdOptions.Outgoing
             ) == true
 
@@ -178,7 +188,7 @@ class CallStateDetectionService : Service(), Handler.Callback {
     // Function to check if post calls option is selected
     suspend fun isPostCallsEnabled(): Boolean {
 
-        return MyApp.instance.dbRepository.callerIDOptions.getCallerIdOptions()?.callerIdOptions?.contains(
+        return dbRepository.callerIDOptions.getCallerIdOptions()?.callerIdOptions?.contains(
             AllCallerIdOptions.Post
         ) == true
     }
@@ -200,8 +210,8 @@ class CallStateDetectionService : Service(), Handler.Callback {
                 val obj =
                     if (intent.hasExtra(McsConstants.EXTRA_REASON)) intent.extras!![McsConstants.EXTRA_REASON] else intent
                 if (ACTION_HEARTBEAT == intent.action) {
-                    MyApp.instance.appPreference.lastHearBeatTime = System.currentTimeMillis()
-                    logger.logInfo("Heartbeat triggered at ${getCurrentTime(MyApp.instance.appPreference.lastHearBeatTime)}")
+                 appPreference.lastHearBeatTime = System.currentTimeMillis()
+                    logger.logInfo("Heartbeat triggered at ${getCurrentTime(appPreference.lastHearBeatTime)}")
                     handler = rootHandler
                     obtainMessage = handler!!.obtainMessage(HEARTBEAT_INITIATED, obj)
                 } else if (McsConstants.ACTION_CONNECT == intent.action) {
@@ -295,15 +305,17 @@ class CallStateDetectionService : Service(), Handler.Callback {
             val currentTime = System.currentTimeMillis()
             val timeDifference = currentTime - lastEventTime
             if (timeDifference >= debounceInterval) {
-                var obtainMessage = Message()
+                val obtainMessage = Message()
                 when (state) {
                     TelephonyManager.CALL_STATE_RINGING -> {
-                        Log.e("fkdjhuog", "onCallStateChanged: 272 ${isIncomingCallsEnabled()}")
-                        if (isIncomingCallsEnabled()) {
-                            obtainMessage.what = CALL_STATE_RINGING
-                            obtainMessage.arg1 = state
-                            obtainMessage.obj = phoneNumber
-                            rootHandler?.sendMessage(obtainMessage)
+                        serviceScope.launch {
+                            if (isIncomingCallsEnabled()) {
+                                obtainMessage.what = CALL_STATE_RINGING
+                                obtainMessage.arg1 = state
+                                obtainMessage.obj = phoneNumber
+                                rootHandler?.sendMessage(obtainMessage)
+                            }
+                            MyApp.instance.callLogHelper.insertRecentCallLogs {}
                         }
                     }
 
@@ -315,6 +327,7 @@ class CallStateDetectionService : Service(), Handler.Callback {
                                 obtainMessage.obj = phoneNumber
                                 rootHandler?.sendMessage(obtainMessage)
                             }
+                            MyApp.instance.callLogHelper.insertRecentCallLogs {}
                         }
                     }
 
@@ -326,6 +339,7 @@ class CallStateDetectionService : Service(), Handler.Callback {
                                 obtainMessage.obj = phoneNumber
                                 rootHandler?.sendMessage(obtainMessage)
                             }
+                            MyApp.instance.callLogHelper.insertRecentCallLogs {}
                         }
 
                     }
@@ -357,10 +371,10 @@ class CallStateDetectionService : Service(), Handler.Callback {
             PERIODIC_5_S -> {
                 try {
                     val currentTime = System.currentTimeMillis()
-                    var lastHeartbeatTime = MyApp.instance.appPreference.lastHearBeatTime
+                    var lastHeartbeatTime = appPreference.lastHearBeatTime
                     if (currentTime - lastHeartbeatTime <= ONE_MINUTE_FIFTEEN_SECONDS) {
                         logger.logInfo("FiveSecExecLog")
-                        MyApp.instance.appPreference.lastCase44TriggerTime = 0L
+                     appPreference.lastCase44TriggerTime = 0L
                     } else {
                         logger.logWarning(
                             "HeartbeatDelay: last was at ${
@@ -369,10 +383,10 @@ class CallStateDetectionService : Service(), Handler.Callback {
                                 )
                             }"
                         )
-                        if (currentTime - MyApp.instance.appPreference.lastCase44TriggerTime > ONE_MINUTE) {
+                        if (currentTime - appPreference.lastCase44TriggerTime > ONE_MINUTE) {
                             logger.logInfo("InitiatingManualWork at ${getCurrentTime(currentTime)}")
                             rootHandler?.sendEmptyMessage(INITIATING_MANUAL_WORK)
-                            MyApp.instance.appPreference.lastCase44TriggerTime = currentTime
+                         appPreference.lastCase44TriggerTime = currentTime
                         }
                     }
                     rootHandler?.removeMessages(PERIODIC_5_S)
@@ -387,7 +401,7 @@ class CallStateDetectionService : Service(), Handler.Callback {
             }
 
             INITIATING_MANUAL_WORK -> {
-                MyApp.instance.appPreference.lastHearBeatTime = System.currentTimeMillis()
+             appPreference.lastHearBeatTime = System.currentTimeMillis()
                 startSilentPlayback(7000)
             }
 

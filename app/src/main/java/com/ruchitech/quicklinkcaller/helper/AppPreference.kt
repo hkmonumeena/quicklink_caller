@@ -47,12 +47,12 @@ constructor(
             value
         ).apply()
 
-    var updateLastInitializationTimestamp: Long
+/*    var updateLastInitializationTimestamp: Long
         get() = getSharedPreference(PREFERENCE_KEY).getLong(UpdateLastInitializationTimestamp, 0L)
         set(value) = getSharedPreferenceEditor(PREFERENCE_KEY).putLong(
             UpdateLastInitializationTimestamp,
             value
-        ).apply()
+        ).apply()*/
 
     var shouldForeground: Boolean
         get() = getSharedPreference(PREFERENCE_KEY).getBoolean(SHOULD_FOREGROUND, false)

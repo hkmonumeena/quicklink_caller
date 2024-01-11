@@ -78,6 +78,7 @@ fun SettingsUi(viewModel: SettingsVm) {
             Text(text = "Select Caller ID Options", fontFamily = sfMediumFont, fontSize = 20.sp)
             // CheckBox for Incoming Calls
             CheckBoxOption(
+                enabled = false,
                 text = "Incoming Calls",
                 checked = selectedOptions?.contains(AllCallerIdOptions.Incoming) == true,
                 onCheckedChange = { isChecked ->
@@ -93,6 +94,7 @@ fun SettingsUi(viewModel: SettingsVm) {
 
             // CheckBox for Outgoing Calls
             CheckBoxOption(
+                enabled = false,
                 text = "Outgoing Calls",
                 checked = selectedOptions?.contains(AllCallerIdOptions.Outgoing) == true,
                 onCheckedChange = { isChecked ->
@@ -108,6 +110,7 @@ fun SettingsUi(viewModel: SettingsVm) {
 
             // CheckBox for Post Calls
             CheckBoxOption(
+                enabled = true,
                 text = "Post Calls",
                 checked = selectedOptions?.contains(AllCallerIdOptions.Post) == true,
                 onCheckedChange = { isChecked ->
@@ -235,6 +238,7 @@ fun RadioButtonItem(
 
 @Composable
 private fun CheckBoxOption(
+    enabled: Boolean = true,
     text: String,
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit
@@ -242,10 +246,15 @@ private fun CheckBoxOption(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onCheckedChange(!checked) },
+            .clickable {
+                if (enabled) {
+                    onCheckedChange(!checked)
+                }
+            },
         verticalAlignment = Alignment.CenterVertically
     ) {
         Checkbox(
+            enabled = enabled,
             checked = checked,
             onCheckedChange = { onCheckedChange(it) }
         )

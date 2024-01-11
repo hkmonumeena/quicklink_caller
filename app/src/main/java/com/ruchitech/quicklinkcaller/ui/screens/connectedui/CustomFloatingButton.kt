@@ -153,7 +153,7 @@ fun MultiFloatingActionButton(
                     }) {
                     translate(150f, top = 300f) {
                         scale(5f) {}
-                        drawCircle(Color(0xFFFBE9E7), radius = 200.dp.toPx())
+                        drawCircle(Color(0x9AB1ADAD), radius = 150.dp.toPx())
 
                     }
                 }
@@ -173,7 +173,7 @@ fun MultiFloatingActionButton(
                     Spacer(modifier = Modifier.height(20.dp))
                 }
                 FloatingActionButton(
-                    shape = RectangleShape,
+                    shape = CircleShape,
                     onClick = {
                         stateChange()
                     }) {

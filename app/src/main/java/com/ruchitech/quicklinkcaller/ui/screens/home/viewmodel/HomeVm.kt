@@ -1,7 +1,12 @@
 package com.ruchitech.quicklinkcaller.ui.screens.home.viewmodel
 
+import android.content.Context
 import android.nfc.tech.MifareUltralight.PAGE_SIZE
 import android.util.Log
+import android.view.inputmethod.InputMethodManager
+import android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.viewModelScope
 import com.quicklink.caller.navhost.nav.RouteNavigator
@@ -9,11 +14,13 @@ import com.ruchitech.quicklinkcaller.helper.AppPreference
 import com.ruchitech.quicklinkcaller.helper.Event
 import com.ruchitech.quicklinkcaller.helper.makePhoneCall
 import com.ruchitech.quicklinkcaller.helper.openWhatsapp
+import com.ruchitech.quicklinkcaller.helper.saveNumberToContacts
 import com.ruchitech.quicklinkcaller.navhost.Screen
 import com.ruchitech.quicklinkcaller.room.DbRepository
 import com.ruchitech.quicklinkcaller.room.data.CallLogsWithDetails
 import com.ruchitech.quicklinkcaller.room.data.Contact
 import com.ruchitech.quicklinkcaller.ui.screens.SharedViewModel
+import com.ruchitech.quicklinkcaller.ui.theme.PurpleSolid
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -45,16 +52,17 @@ class HomeVm @Inject constructor(
     private val _isLoading = MutableStateFlow(false)
     val hasMoreData2 = mutableStateOf(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
-    private val currentPage = mutableStateOf(0)
-    private val currentPageForContacts = mutableStateOf(0)
+    private val currentPage = mutableIntStateOf(0)
+    private val currentPageForContacts = mutableIntStateOf(0)
     val isNoteFieldOpen = mutableStateOf(false)
     val isContactAdded = mutableStateOf(false)
+    val lastSyncTime = mutableLongStateOf(0L)
     private val pageSize = 50
     private var hasMoreData = true
     private var hasMoreDataForContacts = true
     private var lastLoadTimestamp: Long = 0L
     private var lastLoadTimestampContact: Long = 0L
-    val pageSizeForContacts = 50
+    private val pageSizeForContacts = 50
     private val minimumTimeDifference: Long =
         3000L  // Set your desired minimum time difference in milliseconds
 
@@ -63,6 +71,9 @@ class HomeVm @Inject constructor(
         pref.isInitialCallLogDone = true
         loadLogs()
         fetchContacts()
+        viewModelScope.launch {
+            lastSyncTime.value = dbRepository.timestampDao.getTimestamps()?.lastCallLogsSync ?: 0L
+        }
     }
 
     fun updateCallLogByCallerId(
@@ -115,7 +126,19 @@ class HomeVm @Inject constructor(
                                         callLogDetails = callLogsWithDetails.callLogDetails.sortedByDescending { it.date }
                                     )
                                 }
-
+                                sortedCallLogs.forEach { check ->
+                                    if (check.callLogDetails.maxByOrNull { it.date }?.cachedName.isNullOrEmpty() || check.callLogDetails.maxByOrNull { it.date }?.cachedName == "Unknown") {
+                                        var checkName =
+                                            dbRepository.contact.getContactByPhoneNumber(check.callLogs.callerId)?.name
+                                        val tempLog = check.callLogDetails.maxByOrNull { it.date }
+                                        if (tempLog != null) {
+                                            tempLog.cachedName = if (!checkName.isNullOrEmpty()) {
+                                                tempLog.colorCode = PurpleSolid
+                                                checkName
+                                            } else "Unknown"
+                                        }
+                                    }
+                                }
                                 if (callLogsList.size < pageSize) {
                                     hasMoreData = false
                                     if (callLogsData.value.size > 50) {
@@ -264,6 +287,22 @@ class HomeVm @Inject constructor(
 
             else -> Unit
         }
+    }
+
+    fun openKeyboardWithoutFocus() {
+        val inputMethodManager =
+            resourcesProvider.appContext.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        inputMethodManager.toggleSoftInput(InputMethodManager.SHOW_FORCED, SHOW_IMPLICIT)
+    }
+
+    fun hideKeyboard() {
+        val inputMethodManager =
+            resourcesProvider.appContext.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        inputMethodManager.toggleSoftInput(InputMethodManager.HIDE_IMPLICIT_ONLY, 0)
+    }
+
+    fun saveNumberInPhonebook(number: String, name: String) {
+        resourcesProvider.appContext.saveNumberToContacts(number, name)
     }
 
 }

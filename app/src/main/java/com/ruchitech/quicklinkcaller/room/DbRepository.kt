@@ -1,6 +1,5 @@
 package com.ruchitech.quicklinkcaller.room
 
-import com.ruchitech.quicklinkcaller.room.DatabaseDao
 import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
@@ -15,4 +14,5 @@ class DbRepository @Inject constructor(
     val callLogDao = databaseDao.callLogs()
     val contact = databaseDao.contact()
     val callerIDOptions = databaseDao.callerIDOptions()
+    val timestampDao = databaseDao.timestampDao()
 }

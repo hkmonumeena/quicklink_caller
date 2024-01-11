@@ -12,6 +12,7 @@ import com.ruchitech.quicklinkcaller.helper.AppPreference
 import com.ruchitech.quicklinkcaller.room.DbRepository
 import com.ruchitech.quicklinkcaller.room.data.CallLogDetails
 import com.ruchitech.quicklinkcaller.room.data.CallLogs
+import com.ruchitech.quicklinkcaller.room.data.Timestamp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -116,9 +117,11 @@ class CallLogHelper @Inject constructor(
         }
     }
 
-    suspend fun insertRecentCallLogs() {
+    suspend fun insertRecentCallLogs(onSuccess: () -> Unit) {
         withContext(Dispatchers.IO) {
-            val lastInitializationTimestamp = appPreference.updateLastInitializationTimestamp
+            val timestampsObj = dbRepository.timestampDao.getTimestamps()
+            val lastInitializationTimestamp =
+                timestampsObj?.lastCallLogsSync //appPreference.updateLastInitializationTimestamp
             val contentResolver: ContentResolver = context.contentResolver
             val callLogUri = CallLog.Calls.CONTENT_URI
             val projection = arrayOf(
@@ -176,19 +179,30 @@ class CallLogHelper @Inject constructor(
 
 
             cursor?.close()
-
+            Log.e("pfokgijkh", "insertRecentCallLogs: ${callLogsMap.size}")
             val callLogs = callLogsMap.map { (callerId, callLogDetailsList) ->
                 CallLogs(callerId = callerId).apply {
                     callLogDetails = ArrayList(callLogDetailsList)
                 }
             }
+            if (callLogs.isNotEmpty()) {
+                timestampsObj?.copy(
+                    lastCallLogsSync = System.currentTimeMillis()
+                )?.let {
+                    dbRepository.timestampDao.insertOrUpdateTimestamp(
+                        it
+                    )
+                }
+                Log.e("fkmidjhg", "insertRecentCallLogs: timestamp updated")
+            }
             dbRepository.callLogDao.insertCallLogs(callLogs)
             dbRepository.callLogDao.insertCallLogDetails(callLogs.flatMap { it.callLogDetails })
-            appPreference.updateLastInitializationTimestamp = System.currentTimeMillis()
+            onSuccess.invoke()
+            //appPreference.updateLastInitializationTimestamp = System.currentTimeMillis()
         }
     }
 
-   suspend fun getCallLogIdByPhoneNumber(phoneNumber: String): Long? {
+    suspend fun getCallLogIdByPhoneNumber(phoneNumber: String): Long? {
         val contentResolver: ContentResolver = context.contentResolver
         val projection = arrayOf(CallLog.Calls._ID)
         val selection = "${CallLog.Calls.NUMBER} = ?"
@@ -275,11 +289,14 @@ class CallLogHelper @Inject constructor(
                     callLogDetails = ArrayList(callLogDetailsList)
                 }
             }
+            if (callLogs.isNotEmpty()) {
+                dbRepository.timestampDao.insertOrUpdateTimestamp(Timestamp(lastCallLogsSync = System.currentTimeMillis()))
+                Log.e("jkfgfifjjf", "initializeCallLogs: ${callLogs.size}")
+            }
             dbRepository.callLogDao.insertCallLogs(callLogs)
             dbRepository.callLogDao.insertCallLogDetails(callLogs.flatMap { it.callLogDetails })
-            appPreference.updateLastInitializationTimestamp = System.currentTimeMillis()
+            //appPreference.updateLastInitializationTimestamp = System.currentTimeMillis()
             appPreference.isInitialCallLogDone = true
-            Log.e("kgjhgh", "initializeCallLogs: done")
             onSuccess.invoke()
         }
     }

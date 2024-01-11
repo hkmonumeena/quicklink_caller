@@ -1,8 +1,10 @@
 package com.ruchitech.quicklinkcaller.ui.screens.home.screen
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -17,17 +19,27 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Call
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Divider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.DialogProperties
 import com.ruchitech.quicklinkcaller.R
 import com.ruchitech.quicklinkcaller.room.data.Contact
 import com.ruchitech.quicklinkcaller.ui.screens.home.viewmodel.HomeVm
@@ -45,7 +57,7 @@ fun ShowContactsUi(viewModel: HomeVm) {
             }, onDelete = {
                 viewModel.deleteContact(contact)
             })
-            if (contacts.size >25){
+            if (contacts.size > 25) {
                 if (index == contacts.size - 1 && !viewModel.isContactAdded.value) {
                     viewModel.loadMoreContacts()
                 }
@@ -64,6 +76,33 @@ private fun ContactItem(
     onWhatsappIcon: () -> Unit,
     onDelete: () -> Unit
 ) {
+    var deleteConfirm by remember {
+        mutableStateOf(false)
+    }
+    if (deleteConfirm) {
+        AlertDialog(onDismissRequest = {
+            deleteConfirm = false
+        },
+            properties = DialogProperties(dismissOnBackPress = true, dismissOnClickOutside = true),
+            title = {
+                Text(text = "Confirm delete")
+            },
+            text = {
+                Text(text = "Are you sure you want to delete this contact?")
+            }, confirmButton = {
+                TextButton(onClick = {
+                    onDelete()
+                }) {
+                    Text(text = "Confirm")
+                }
+            }, dismissButton = {
+                TextButton(onClick = {
+                    deleteConfirm = false
+                }) {
+                    Text(text = "Cancel")
+                }
+            })
+    }
     Column(
         modifier = Modifier
             .wrapContentHeight()
@@ -81,7 +120,9 @@ private fun ContactItem(
             Image(
                 painter = painterResource(id = R.drawable.unknown_user),
                 contentDescription = null,
-                modifier = Modifier.size(45.dp)
+                modifier = Modifier
+                    .size(45.dp)
+                    .padding(5.dp)
             )
             Column(
                 modifier = Modifier
@@ -92,42 +133,86 @@ private fun ContactItem(
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.Start
             ) {
-                Text(text = contact.name, fontWeight = FontWeight.Bold)
-                Text(text = contact.phoneNumber, color = Color.Gray)
-            }
-            Row(
-                horizontalArrangement = Arrangement.End,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Image(
-                    imageVector = Icons.Default.Call,
-                    contentDescription = null,
+                Text(
+                    text = contact.name,
+                    fontFamily = FontFamily.SansSerif,
+                    maxLines = 1,
+                    fontSize = 17.sp,
+                    color = Color(0XFF323232),
+                    overflow = TextOverflow.Ellipsis,
                     modifier = Modifier
-                        .size(25.dp)
-                        .clickable {
-                            onCallIcon()
-                        }
+                        .padding(end = 10.dp)
                 )
-                Spacer(modifier = Modifier.width(12.dp))
-                Image(
-                    painterResource(id = R.drawable.whatsapp),
-                    contentDescription = null,
+                Row(
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
-                        .size(25.dp)
-                        .clickable {
-                            onWhatsappIcon()
-                        }
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Image(
-                    painterResource(id = R.drawable.ic_delete),
-                    contentDescription = null,
-                    modifier = Modifier
-                        .size(25.dp)
-                        .clickable {
-                        onDelete()
-                        }
-                )
+                        .height(25.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .fillMaxHeight()
+                            .weight(0.6F)
+                    ) {
+                        Text(
+                            text = contact.phoneNumber,
+                            color = Color.Gray,
+                            maxLines = 1,
+                            lineHeight = 25.sp,
+                            fontFamily = FontFamily.SansSerif,
+                            fontSize = 16.sp,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .fillMaxHeight()
+                        )
+
+                    }
+                    Row(
+                        horizontalArrangement = Arrangement.End,
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1F)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Call,
+                            tint = Color.Gray,
+                            contentDescription = null,
+                            modifier = Modifier
+                                .size(25.dp)
+                                .padding(3.dp)
+                                .clickable {
+                                    onCallIcon()
+                                }
+                        )
+                        Spacer(modifier = Modifier.width(5.dp))
+                        Icon(
+                            painterResource(id = R.drawable.ic_whatsapp_black),
+                            contentDescription = null,
+                            tint = Color.Gray,
+                            modifier = Modifier
+                                .size(25.dp)
+                                .padding(4.dp)
+                                .clickable {
+                                    onWhatsappIcon()
+                                }
+                        )
+                        Spacer(modifier = Modifier.width(5.dp))
+                        Icon(
+                            Icons.Default.Delete,
+                            contentDescription = null,
+                            tint = Color.Gray,
+                            modifier = Modifier
+                                .size(25.dp)
+                                .padding(3.dp)
+                                .clickable {
+                                    deleteConfirm = true
+                                }
+                        )
+                    }
+                }
+
             }
         }
         Divider(

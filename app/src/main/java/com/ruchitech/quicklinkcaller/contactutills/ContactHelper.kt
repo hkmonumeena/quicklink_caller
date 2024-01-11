@@ -3,6 +3,7 @@ package com.ruchitech.quicklinkcaller.contactutills
 import android.content.ContentResolver
 import android.content.Context
 import android.database.Cursor
+import android.net.Uri
 import android.provider.ContactsContract
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
@@ -93,6 +94,34 @@ class ContactHelper(private val context: Context) {
             ContactsContract.CommonDataKinds.StructuredPostal.FORMATTED_ADDRESS
         )
     }
+
+    suspend fun getNameFromPhoneNumber(number: String): String {
+/*        if (!context.hasPermission(PERMISSION_READ_CONTACTS)) {
+            return number
+        }*/
+
+        val uri = Uri.withAppendedPath(
+            ContactsContract.PhoneLookup.CONTENT_FILTER_URI,
+            Uri.encode(number)
+        )
+
+        val projection = arrayOf(ContactsContract.PhoneLookup.DISPLAY_NAME)
+
+        return try {
+            context.contentResolver.query(uri, projection, null, null, null)?.use { cursor ->
+                if (cursor.moveToFirst()) {
+                    val displayNameIndex = cursor.getColumnIndex(ContactsContract.PhoneLookup.DISPLAY_NAME)
+                    cursor.getString(displayNameIndex)
+                } else {
+                    "Unknown"
+                }
+            } ?: number
+        } catch (e: Throwable) {
+            // Log or report the exception
+            "Unknown"
+        }
+    }
+
 
 }
 

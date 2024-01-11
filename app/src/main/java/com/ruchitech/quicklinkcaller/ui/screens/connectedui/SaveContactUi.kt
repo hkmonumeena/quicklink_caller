@@ -1,16 +1,19 @@
 package com.ruchitech.quicklinkcaller.ui.screens.connectedui
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
@@ -63,10 +66,13 @@ fun SaveContactUi(
     Dialog(onDismissRequest = {
         onClose()
     }, properties = DialogProperties(dismissOnBackPress = true, dismissOnClickOutside = false)) {
-        Card(colors = CardDefaults.cardColors(containerColor = if (!number.isNullOrEmpty()) Color(0xFFF4E6E7) else Color(
-            0xFFFFCCBC
-        )
-        )) {
+        Card(
+            colors = CardDefaults.cardColors(
+                containerColor = if (!number.isNullOrEmpty()) Color(0xFFF4E6E7) else Color(
+                    0xFFF4E6E7
+                )
+            )
+        ) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -79,7 +85,7 @@ fun SaveContactUi(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "Save Number In App Book",
+                        text = "Secondary Contact",
                         style = TextStyle(fontSize = 15.sp, fontFamily = sfSemibold),
                         modifier = Modifier.padding(vertical = 10.dp)
                     )
@@ -117,31 +123,40 @@ fun SaveContactUi(
                             .fillMaxWidth()
                             .height(56.dp)
                     )
-                    Spacer(modifier = Modifier.height(10.dp))
-                    TextField(
-                        value = email,
-                        onValueChange = { email = it },
-                        label = { Text("Email Address") },
-                        isError = !isEmailValid,
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Email,
-                            imeAction = ImeAction.Done
-                        ),
-                        keyboardActions = KeyboardActions(
-                            onDone = { /* Handle done action */ }
+                    /*       Spacer(modifier = Modifier.height(10.dp))
+                           TextField(
+                               value = email,
+                               onValueChange = { email = it },
+                               label = { Text("Email Address") },
+                               isError = !isEmailValid,
+                               keyboardOptions = KeyboardOptions(
+                                   keyboardType = KeyboardType.Email,
+                                   imeAction = ImeAction.Done
+                               ),
+                               keyboardActions = KeyboardActions(
+                                   onDone = { *//* Handle done action *//* }
                         ),
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(56.dp)
-                    )
+                    )*/
                     Spacer(modifier = Modifier.height(10.dp))
-                    Button(onClick = {
-                        if (name.isNotEmpty() && phoneNumber.isNotEmpty()) {
-                            onSave(name, phoneNumber, email)
+                    Row(horizontalArrangement = Arrangement.Center) {
+                        OutlinedButton(onClick = {
+                            onClose()
+                        }) {
+                            Text(text = "Cancel")
                         }
-                    }) {
-                        Text(text = "Save In App book")
+                        Spacer(modifier = Modifier.width(10.dp))
+                        OutlinedButton(onClick = {
+                            if (name.isNotEmpty() && phoneNumber.isNotEmpty()) {
+                                onSave(name, phoneNumber, email)
+                            }
+                        }) {
+                            Text(text = " Save ")
+                        }
                     }
+
                 }
             }
 

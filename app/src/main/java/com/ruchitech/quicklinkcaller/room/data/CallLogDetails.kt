@@ -1,7 +1,9 @@
 package com.ruchitech.quicklinkcaller.room.data
 
+import androidx.compose.ui.graphics.Color
 import androidx.room.Embedded
 import androidx.room.Entity
+import androidx.room.Ignore
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import androidx.room.Relation
@@ -32,9 +34,12 @@ data class CallLogs(
 data class CallLogDetails(
     @PrimaryKey val id: Long,
     val callerId: String,
-    val cachedName: String?,
+    var cachedName: String?,
     val number: String,
     val type: com.ruchitech.quicklinkcaller.ui.screens.home.screen.CallType,
     val date: Long,
     val duration: Long
-)
+){
+    @Ignore
+    var colorCode: Color = Color.Black
+}

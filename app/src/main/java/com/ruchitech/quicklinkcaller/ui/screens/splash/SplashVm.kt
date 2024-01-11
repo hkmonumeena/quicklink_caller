@@ -1,5 +1,7 @@
 package com.ruchitech.quicklinkcaller.ui.screens.splash
 
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.quicklink.caller.navhost.nav.RouteNavigator
@@ -51,18 +53,26 @@ class SplashVm @Inject constructor(
     fun isPostCallsEnabled(): Boolean {
         return AllCallerIdOptions.Post in appPreference.callerIdOptions
     }
+
     init {
-        Log.e("gifkhfghgh", "${isIncomingCallsEnabled()}:${isOutgoingCallsEnabled()}, ${isPostCallsEnabled()} ")
-        android.os.Handler().postDelayed({
-            if (appPreference.isInitialCallLogDone) {
-                viewModelScope.launch {
-                    callLogHelper.insertRecentCallLogs()
-                    navigateToHome()
+        Log.e(
+            "gifkhfghgh",
+            "${isIncomingCallsEnabled()}:${isOutgoingCallsEnabled()}, ${isPostCallsEnabled()} "
+        )
+        if (appPreference.isInitialCallLogDone) {
+            viewModelScope.launch {
+                callLogHelper.insertRecentCallLogs {
+                    Log.e("fkjikhuj", "sync done: ")
+                    Handler(Looper.getMainLooper()).postDelayed({
+                        navigateToHome()
+                    }, 3000)
                 }
-            } else {
-                navigateToInitialDataPreparation()
             }
-        }, 3000)
+        } else {
+            Handler().postDelayed({
+                navigateToInitialDataPreparation()
+            }, 200)
+        }
     }
 
     private fun navigateToHome() {

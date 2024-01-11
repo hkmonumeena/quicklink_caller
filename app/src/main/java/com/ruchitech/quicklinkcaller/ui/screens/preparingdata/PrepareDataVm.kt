@@ -63,8 +63,8 @@ class PrepareDataVm @Inject constructor(
                     dbRepository.callerIDOptions.insertOrUpdateCallerIdOptions(
                         CallerIdOptionsEntity(
                             callerIdOptions = setOf(
-                                AllCallerIdOptions.Incoming,
-                                AllCallerIdOptions.Outgoing,
+                        /*        AllCallerIdOptions.Incoming,
+                                AllCallerIdOptions.Outgoing,*/
                                 AllCallerIdOptions.Post
                             )
                         )

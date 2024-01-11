@@ -41,10 +41,11 @@ class PostCallActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         val number = intent.extras?.getString("number")
         setContent {
-            var showSaveInappDialog by remember {
+            var saveInAppDialog by remember {
                 mutableStateOf(false)
             }
             PostCallInfoPopup(
+                dbRepository,
                 number = number ?: "",
                 openWhatsapp = {
                     openWhatsapp(it)
@@ -60,27 +61,29 @@ class PostCallActivity : ComponentActivity() {
                     }
                 },
                 saveNumberInApp = {
-                    showSaveInappDialog = true
+                    saveInAppDialog = true
                 },
                 saveNumberInPhonebook = {
                     if (number != null) {
                         saveNumberToContacts(number, "")
                     }
                 },
+                toastMsg = { Toast.makeText(this, it, Toast.LENGTH_SHORT).show() },
                 callLogNote = { number, note ->
                     CoroutineScope(Dispatchers.IO).launch {
                         //      val id = callLogHelper.getCallLogIdByPhoneNumber(number)
                         insertNoteOnCallLog(note, number)
+                        finish()
                     }
                 }, onClose = {
                     finish()
                 })
 
-            if (showSaveInappDialog) {
+            if (saveInAppDialog) {
                 SaveContactUi(number, onClose = {
-                    showSaveInappDialog = false
+                    saveInAppDialog = false
                 }) { name, number, email ->
-                    showSaveInappDialog = false
+                    saveInAppDialog = false
                     saveContactInApp(name, number, email)
                 }
             }
@@ -97,7 +100,7 @@ class PostCallActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         CoroutineScope(Dispatchers.IO).launch {
-            callLogHelper.insertRecentCallLogs()
+            callLogHelper.insertRecentCallLogs {}
         }
     }
 
@@ -113,6 +116,7 @@ class PostCallActivity : ComponentActivity() {
             )
             runOnUiThread {
                 Toast.makeText(this@PostCallActivity, "Contact Saved!", Toast.LENGTH_SHORT).show()
+                finish()
             }
         }
     }
@@ -126,6 +130,7 @@ class PostCallActivity : ComponentActivity() {
             dbRepository.callLogDao.insertOrUpdateCallLogs(callLogs!!)
             runOnUiThread {
                 Toast.makeText(this, "Note saved successfully!", Toast.LENGTH_SHORT).show()
+                finish()
             }
         } else {
             runOnUiThread {
