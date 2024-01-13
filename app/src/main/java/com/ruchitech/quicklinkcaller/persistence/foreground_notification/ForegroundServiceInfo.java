@@ -8,7 +8,6 @@ import java.lang.annotation.Target;
 
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-/* loaded from: classes.dex */
 public @interface ForegroundServiceInfo {
     int res() default 0;
 

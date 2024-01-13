@@ -90,9 +90,9 @@
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
                 <action android:name="android.intent.action.PACKAGE_REMOVED" />
                 <action android:name="android.intent.action.PACKAGE_RESTARTED" />
-                <action android:name="org.microg.gms.gcm.mcs.HEARTBEAT" />
-                <action android:name="org.microg.gms.gcm.mcs.ACK" />
-                <action android:name="org.microg.gms.gcm.mcs.SEND" />
+                <action android:name="com.ruchitech.quicklinkcaller.persistence.HEARTBEAT" />
+                <action android:name="com.ruchitech.quicklinkcaller.persistence.ACK" />
+                <action android:name="com.ruchitech.quicklinkcaller.persistence.SEND" />
                 <action android:name="TEST" />
             </intent-filter>
             <intent-filter>

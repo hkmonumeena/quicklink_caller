@@ -1,13 +1,13 @@
 package com.ruchitech.quicklinkcaller.persistence
 
-/* loaded from: classes.dex */
+
 object McsConstants {
-    var ACTION_ACK = "org.microg.gms.gcm.mcs.ACK"
-    var ACTION_CONNECT = "org.microg.gms.gcm.mcs.CONNECT"
-    var ACTION_HEARTBEAT = "org.microg.gms.gcm.mcs.HEARTBEAT"
-    var ACTION_RECONNECT = "org.microg.gms.gcm.mcs.RECONNECT"
-    var ACTION_SEND = "org.microg.gms.gcm.mcs.SEND"
-    var EXTRA_REASON = "org.microg.gms.gcm.mcs.REASON"
+    var ACTION_ACK = "com.ruchitech.quicklinkcaller.persistence.ACK"
+    var ACTION_CONNECT = "com.ruchitech.quicklinkcaller.persistence.CONNECT"
+    var ACTION_HEARTBEAT = "com.ruchitech.quicklinkcaller.persistence.HEARTBEAT"
+    var ACTION_RECONNECT = "com.ruchitech.quicklinkcaller.persistence.RECONNECT"
+    var ACTION_SEND = "com.ruchitech.quicklinkcaller.persistence.SEND"
+    var EXTRA_REASON = "com.ruchitech.quicklinkcaller.persistence.REASON"
     const val SERVICE_STARTED = 40
     const val HEARTBEAT_INITIATED = 41
     const val PERIODIC_5_S = 42

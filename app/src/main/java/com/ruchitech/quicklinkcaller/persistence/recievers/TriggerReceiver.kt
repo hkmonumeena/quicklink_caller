@@ -43,7 +43,7 @@ class TriggerReceiver : ServiceControlReceiver() {
         if (isServiceRunning(context, CallStateDetectionService::class.java)) return
         Log.d(
             TAG,
-            "Not connected to GCM but should be, asking the service to start up. Triggered by: $intent"
+            "Not connected to Service but should be, asking the service to start up. Triggered by: $intent"
         )
         putExtra =
             Intent(
@@ -63,7 +63,7 @@ class TriggerReceiver : ServiceControlReceiver() {
     }*/
 
     companion object {
-        const val FORCE_TRY_RECONNECT = "org.microg.gms.gcm.FORCE_TRY_RECONNECT"
+        const val FORCE_TRY_RECONNECT = "com.ruchitech.quicklinkcaller.persistence.FORCE_TRY_RECONNECT"
         private const val TAG = "GmsGcmTrigger"
         private var registered = false
 
@@ -73,10 +73,10 @@ class TriggerReceiver : ServiceControlReceiver() {
                 if (Build.VERSION.SDK_INT >= 24 && !registered) {
                     val intentFilter = IntentFilter()
                     intentFilter.addAction("android.net.conn.CONNECTIVITY_CHANGE")
-                    intentFilter.addAction("org.microg.gms.gcm.mcs.ACK")
-                    intentFilter.addAction("org.microg.gms.gcm.mcs.CONNECT")
-                    intentFilter.addAction("org.microg.gms.gcm.mcs.HEARTBEAT")
-                    intentFilter.addAction("org.microg.gms.gcm.mcs.RECONNECT")
+                    intentFilter.addAction("com.ruchitech.quicklinkcaller.persistence.ACK")
+                    intentFilter.addAction("com.ruchitech.quicklinkcaller.persistence.CONNECT")
+                    intentFilter.addAction("com.ruchitech.quicklinkcaller.persistence.HEARTBEAT")
+                    intentFilter.addAction("com.ruchitech.quicklinkcaller.persistence.RECONNECT")
                     intentFilter.addAction(ACTION_SEND)
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                         context.applicationContext.registerReceiver(

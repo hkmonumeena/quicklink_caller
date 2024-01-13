@@ -21,7 +21,7 @@ import androidx.core.app.NotificationCompat;
 
 import com.ruchitech.quicklinkcaller.R;
 
-/* loaded from: classes.dex */
+
 public class ForegroundServiceContext extends ContextWrapper {
     public static final String EXTRA_FOREGROUND = "foreground";
     private static final String TAG = "ForegroundService";
@@ -57,7 +57,6 @@ public class ForegroundServiceContext extends ContextWrapper {
     }
 
     public static void completeForegroundService(Service service, Intent intent, String str) {
-        Log.e("gfkmjkhgh", "completeForegroundService: "+intent);
         if (Build.VERSION.SDK_INT < 23 || intent == null || !intent.getBooleanExtra(EXTRA_FOREGROUND, false)) {
             return;
         }

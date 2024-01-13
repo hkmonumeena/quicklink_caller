@@ -371,7 +371,7 @@ class CallStateDetectionService : Service(), Handler.Callback {
             PERIODIC_5_S -> {
                 try {
                     val currentTime = System.currentTimeMillis()
-                    var lastHeartbeatTime = appPreference.lastHearBeatTime
+                    val lastHeartbeatTime = appPreference.lastHearBeatTime
                     if (currentTime - lastHeartbeatTime <= ONE_MINUTE_FIFTEEN_SECONDS) {
                         logger.logInfo("FiveSecExecLog")
                      appPreference.lastCase44TriggerTime = 0L
@@ -434,22 +434,22 @@ class CallStateDetectionService : Service(), Handler.Callback {
 
     @RequiresApi(Build.VERSION_CODES.M)
     fun scheduleHeartbeat(context: Context) {
-        val alarmManager = context.getSystemService("alarm") as AlarmManager
-        val heartbeatMsFor = ONE_MINUTE //GcmPrefs.get(this).getHeartbeatMsFor(activeNetworkPref);
+        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val heartbeatMsFor = ONE_MINUTE
         logger.logInfo("Scheduling heartbeat in 60 seconds...")
         val i5 = Build.VERSION.SDK_INT
         if (i5 >= 23) {
             alarmManager.setAndAllowWhileIdle(
-                2,
+                AlarmManager.ELAPSED_REALTIME_WAKEUP,
                 SystemClock.elapsedRealtime() + heartbeatMsFor,
                 heartbeatIntent!!
             )
         } else if (i5 < 19) {
-            alarmManager[2, SystemClock.elapsedRealtime() + heartbeatMsFor] = heartbeatIntent!!
+            alarmManager[AlarmManager.ELAPSED_REALTIME_WAKEUP, SystemClock.elapsedRealtime() + heartbeatMsFor] = heartbeatIntent!!
         } else {
             val i6 = heartbeatMsFor / 4
             alarmManager.setWindow(
-                2,
+                AlarmManager.ELAPSED_REALTIME_WAKEUP,
                 SystemClock.elapsedRealtime() + i6 * 3,
                 i6,
                 heartbeatIntent!!
