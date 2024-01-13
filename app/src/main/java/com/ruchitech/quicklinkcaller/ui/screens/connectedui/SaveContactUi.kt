@@ -42,22 +42,25 @@ import kotlinx.coroutines.launch
 @Composable
 fun SaveContactUi(
     number: String?,
+    nameStr: String? = "",
     onClose: () -> Unit,
     onSave: (name: String, number: String, email: String) -> Unit
 ) {
-    var name by remember { mutableStateOf("") }
+    var name by remember { mutableStateOf(nameStr) }
     var phoneNumber by remember { mutableStateOf(number ?: "") }
     var email by remember { mutableStateOf("") }
     val context = LocalContext.current
-    val isNameValid = name.isNotBlank()
+    val isNameValid = name?.isNotBlank()
     val isPhoneNumberValid = phoneNumber.isNotBlank() // You can add more complex validation
     val isEmailValid = true// isValidEmail(email)
     DisposableEffect(number) {
         val job = GlobalScope.launch(Dispatchers.IO) {
             val contactDetails = ContactHelper(context).getContactDetailsByPhoneNumber(number ?: "")
-            name =
-                if (contactDetails.displayName.isNotEmpty() && contactDetails.displayName != "Unknown") contactDetails.displayName
-                    ?: "" else ""
+            if (nameStr.isNullOrEmpty()) {
+                name =
+                    if (contactDetails.displayName.isNotEmpty() && contactDetails.displayName != "Unknown") contactDetails.displayName
+                        ?: "" else ""
+            }
         }
         onDispose {
             job.cancel()
@@ -91,10 +94,10 @@ fun SaveContactUi(
                     )
                     Spacer(modifier = Modifier.height(10.dp))
                     TextField(
-                        value = name,
+                        value = name ?: "",
                         onValueChange = { name = it },
                         label = { Text("Name") },
-                        isError = !isNameValid,
+                        isError = !isNameValid!!,
                         keyboardOptions = KeyboardOptions(
                             keyboardType = KeyboardType.Text,
                             imeAction = ImeAction.Next
@@ -149,8 +152,8 @@ fun SaveContactUi(
                         }
                         Spacer(modifier = Modifier.width(10.dp))
                         OutlinedButton(onClick = {
-                            if (name.isNotEmpty() && phoneNumber.isNotEmpty()) {
-                                onSave(name, phoneNumber, email)
+                            if (!name.isNullOrEmpty() && phoneNumber.isNotEmpty()) {
+                                onSave(name ?: "", phoneNumber, email)
                             }
                         }) {
                             Text(text = " Save ")

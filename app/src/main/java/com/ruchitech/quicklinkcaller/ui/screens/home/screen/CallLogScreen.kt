@@ -27,12 +27,10 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -64,8 +62,6 @@ import com.ruchitech.quicklinkcaller.ui.screens.connectedui.SaveContactUi
 import com.ruchitech.quicklinkcaller.ui.screens.home.viewmodel.HomeVm
 import com.ruchitech.quicklinkcaller.ui.theme.sfMediumFont
 import com.ruchitech.quicklinkcaller.ui.theme.sfSemibold
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
 
 data class CallLog(
@@ -106,47 +102,8 @@ fun CallLogScreen(viewModel: HomeVm) {
         mutableStateOf(false)
     }
 
-    val noteDialogState = rememberUseCaseState(visible = false, onFinishedRequest = {
-    }, onCloseRequest = {
-        noteText.value = ""
-        viewModel.isNoteFieldOpen.value = true
-    }, onDismissRequest = {
-        noteText.value = ""
-        viewModel.isNoteFieldOpen.value = true
-    })
-    val inputOptions = listOf(
-        InputTextField(
-            header = InputHeader(
-                title = "Add Call Notes",
-                icon = IconSource(R.drawable.ic_note, tint = Color.Gray)
-            ),
-            text = noteText.value,
-            maxLines = 4,
-            validationListener = { value ->
-                if ((value?.length ?: 0) >= 3) ValidationResult.Valid
-                else ValidationResult.Invalid("Needs to be at least 3 letters long")
-            },
-            changeListener = {
-                noteText.value = it
-            },
-
-            )
-    )
-
-    InputDialog(
-        state = noteDialogState,
-        selection = InputSelection(
-            input = inputOptions,
-            onPositiveClick = { result ->
-                Log.e("jgflmfjg", "CallLogScreen: ${noteText.value}  ${noteID.value}")
-                //     viewModel.insertNote(noteText.value, noteID.value)
-
-            },
-        )
-    )
-
     if (showAddNoteDialog) {
-        AddNoteDialog(viewModel,noteText.value, onDismiss = {
+        AddNoteDialog(viewModel, noteText.value, onDismiss = {
             noteText.value = ""
             showAddNoteDialog = false
         }) { newNote ->
@@ -235,7 +192,7 @@ fun CallLogItem(
         mutableStateOf(false)
     }
     if (showSaveInappDialog) {
-        SaveContactUi(callLog.number, onClose = {
+        SaveContactUi(callLog.number, "", onClose = {
             showSaveInappDialog = false
         }) { name, number, email ->
             showSaveInappDialog = false

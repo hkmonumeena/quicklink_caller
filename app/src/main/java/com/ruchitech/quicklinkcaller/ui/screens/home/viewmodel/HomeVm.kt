@@ -65,7 +65,7 @@ class HomeVm @Inject constructor(
     private val pageSizeForContacts = 50
     private val minimumTimeDifference: Long =
         3000L  // Set your desired minimum time difference in milliseconds
-
+    var indexNumForEditContact = mutableIntStateOf(0)
 
     init {
         pref.isInitialCallLogDone = true
@@ -89,7 +89,7 @@ class HomeVm @Inject constructor(
             // Check if enough time has passed since the last load
             if (currentTimestamp - lastLoadTimestamp >= minimumTimeDifference) {
                 _isLoading.value = true
-                currentPage.value += 1
+                currentPage.intValue += 1
                 lastLoadTimestamp = currentTimestamp
                 loadLogs()
             }
@@ -132,8 +132,8 @@ class HomeVm @Inject constructor(
                                             dbRepository.contact.getContactByPhoneNumber(check.callLogs.callerId)?.name
                                         val tempLog = check.callLogDetails.maxByOrNull { it.date }
                                         if (tempLog != null) {
+                                            tempLog.colorCode = PurpleSolid
                                             tempLog.cachedName = if (!checkName.isNullOrEmpty()) {
-                                                tempLog.colorCode = PurpleSolid
                                                 checkName
                                             } else "Unknown"
                                         }
@@ -264,6 +264,20 @@ class HomeVm @Inject constructor(
 
     }
 
+    private fun editContactInApp(contact: Contact) {
+        CoroutineScope(Dispatchers.IO).launch {
+            dbRepository.contact.insertContact(contact)
+            val tempList =
+                contacts.value.toMutableList()//.set(indexNumForEditContact.intValue,contact)
+            tempList[indexNumForEditContact.intValue] = contact
+            val sortedList = tempList.sortedBy { it.name }
+            updateContactList(sortedList.toMutableList())
+            delay(1200)
+            isContactAdded.value = false
+        }
+
+    }
+
     fun openWhatsAppByNum(number: String) {
         resourcesProvider.appContext.openWhatsapp(number)
     }
@@ -280,6 +294,10 @@ class HomeVm @Inject constructor(
                     showSnackbar("Contact Saved")
                     isContactAdded.value = true
                     saveContactInApp(event.any)
+                } else if (event.type == 3 && event.any is Contact) {
+                    showSnackbar("Contact Updated")
+                    isContactAdded.value = true
+                    editContactInApp(event.any)
                 } else if (event.type == 2) {
                     navigateToRoute(Screen.SettingsRoute.route)
                 }

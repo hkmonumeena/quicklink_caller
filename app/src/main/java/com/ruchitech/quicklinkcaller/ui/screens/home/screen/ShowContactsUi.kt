@@ -1,7 +1,6 @@
 package com.ruchitech.quicklinkcaller.ui.screens.home.screen
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -41,22 +40,55 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.DialogProperties
 import com.ruchitech.quicklinkcaller.R
+import com.ruchitech.quicklinkcaller.helper.Event
+import com.ruchitech.quicklinkcaller.helper.EventEmitter
 import com.ruchitech.quicklinkcaller.room.data.Contact
+import com.ruchitech.quicklinkcaller.ui.screens.connectedui.SaveContactUi
 import com.ruchitech.quicklinkcaller.ui.screens.home.viewmodel.HomeVm
 
 @Composable
 fun ShowContactsUi(viewModel: HomeVm) {
     // Collect the Flow of paginated and sorted contacts
     val contacts by viewModel.contacts.collectAsState()
+    var showSaveInappDialog by remember {
+        mutableStateOf(false)
+    }
+    var contactForEdit by remember {
+        mutableStateOf<Contact?>(null)
+    }
+    if (showSaveInappDialog) {
+        SaveContactUi(contactForEdit?.phoneNumber, contactForEdit?.name, onClose = {
+            showSaveInappDialog = false
+        }) { name, number, email ->
+            showSaveInappDialog = false
+            EventEmitter.postEvent(
+                Event.HomeVm(
+                    3,
+                    Contact(
+                        id = contactForEdit?.id ?: 0,
+                        name = name,
+                        phoneNumber = number,
+                        email = email,
+                        address = ""
+                    )
+                )
+            )
+        }
+    }
     LazyColumn {
         itemsIndexed(contacts) { index, contact ->
             ContactItem(contact, onCallIcon = {
                 viewModel.makeCallToNum(contact.phoneNumber)
-            }, onWhatsappIcon = {
-                viewModel.openWhatsAppByNum(contact.phoneNumber)
-            }, onDelete = {
-                viewModel.deleteContact(contact)
-            })
+            },
+                onEdit = {
+                    viewModel.indexNumForEditContact.value = index
+                    contactForEdit = contact
+                    showSaveInappDialog = true
+                }, onWhatsappIcon = {
+                    viewModel.openWhatsAppByNum(contact.phoneNumber)
+                }, onDelete = {
+                    viewModel.deleteContact(contact)
+                })
             if (contacts.size > 25) {
                 if (index == contacts.size - 1 && !viewModel.isContactAdded.value) {
                     viewModel.loadMoreContacts()
@@ -72,6 +104,7 @@ fun ShowContactsUi(viewModel: HomeVm) {
 @Composable
 private fun ContactItem(
     contact: Contact,
+    onEdit: () -> Unit,
     onCallIcon: () -> Unit,
     onWhatsappIcon: () -> Unit,
     onDelete: () -> Unit
@@ -107,6 +140,7 @@ private fun ContactItem(
         modifier = Modifier
             .wrapContentHeight()
             .fillMaxWidth()
+            .clickable { onEdit() }
     ) {
         Spacer(modifier = Modifier.height(5.dp))
         Row(

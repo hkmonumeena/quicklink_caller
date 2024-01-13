@@ -80,7 +80,7 @@ class PostCallActivity : ComponentActivity() {
                 })
 
             if (saveInAppDialog) {
-                SaveContactUi(number, onClose = {
+                SaveContactUi(number, "", onClose = {
                     saveInAppDialog = false
                 }) { name, number, email ->
                     saveInAppDialog = false

@@ -102,7 +102,7 @@ fun Context.openWhatsapp(number: String) {
 }
 
 fun Context.makePhoneCall(phoneNumber: String) {
-    val intent = Intent(Intent.ACTION_DIAL)
+    val intent = Intent(Intent.ACTION_CALL)
     intent.data = Uri.parse("tel:$phoneNumber")
     intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     startActivity(intent)

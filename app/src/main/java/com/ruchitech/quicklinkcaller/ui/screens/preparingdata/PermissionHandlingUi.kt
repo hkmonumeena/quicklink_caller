@@ -54,10 +54,13 @@ import com.dawidraszka.composepermissionhandler.core.PermissionHandlerHostState
 import com.dawidraszka.composepermissionhandler.core.PermissionHandlerResult
 import com.dawidraszka.composepermissionhandler.utils.openAppSettings
 import com.ruchitech.quicklinkcaller.R
+import com.ruchitech.quicklinkcaller.helper.XiaomiUtilities
+import com.ruchitech.quicklinkcaller.helper.XiaomiUtilities.isMIUI
 import com.ruchitech.quicklinkcaller.ui.theme.Purple40
 import com.ruchitech.quicklinkcaller.ui.theme.sfMediumFont
 import com.ruchitech.quicklinkcaller.ui.theme.sfSemibold
 import kotlinx.coroutines.launch
+
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionHandlerApi::class)
 @Composable
@@ -79,7 +82,7 @@ fun PermissionHandlingUi(viewModel: PrepareDataVm) {
     )
 
     val permissionHandlerHostStateMakeCalls = PermissionHandlerHostState(
-        listOf(Manifest.permission.READ_PHONE_STATE,Manifest.permission.CALL_PHONE)
+        listOf(Manifest.permission.READ_PHONE_STATE, Manifest.permission.CALL_PHONE)
     )
     val permissionHandlerHostStateSendSMS = PermissionHandlerHostState(
         listOf(Manifest.permission.SEND_SMS)
@@ -399,11 +402,24 @@ fun PermissionHandlingUi(viewModel: PrepareDataVm) {
                 iconId = R.drawable.display_over_other_app,
                 viewModel.appOverOtherGranted.value
             ) {
-                val intent = Intent(
-                    Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                    Uri.parse("package:${context.packageName}")
-                )
-                requestPermissionLauncher2.launch(intent)
+                val xiaomiUtilities = XiaomiUtilities()
+                if (isMIUI()) {
+                    val intent: Intent =
+                        Intent("miui.intent.action.APP_PERM_EDITOR")
+                    intent.setClassName(
+                        "com.miui.securitycenter",
+                        "com.miui.permcenter.permissions.PermissionsEditorActivity"
+                    )
+                    intent.putExtra("extra_pkgname", context.getPackageName())
+                    context.startActivity(intent)
+                } else {
+                    val intent = Intent(
+                        Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                        Uri.parse("package:${context.packageName}")
+                    )
+                    requestPermissionLauncher2.launch(intent)
+                }
+
             }
             Spacer(modifier = Modifier.height(30.dp))
             Spacer(modifier = Modifier.height(30.dp))
