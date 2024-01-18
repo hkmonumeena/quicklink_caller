@@ -31,6 +31,7 @@ import com.ruchitech.quicklinkcaller.R
 import com.ruchitech.quicklinkcaller.helper.AppPreference
 import com.ruchitech.quicklinkcaller.helper.AppPreferences
 import com.ruchitech.quicklinkcaller.helper.Logger
+import com.ruchitech.quicklinkcaller.helper.NotificationHelper
 import com.ruchitech.quicklinkcaller.helper.isServiceRunning
 import com.ruchitech.quicklinkcaller.persistence.McsConstants.ACTION_HEARTBEAT
 import com.ruchitech.quicklinkcaller.persistence.McsConstants.CALL_STATE_OFFHOOK
@@ -78,6 +79,8 @@ class CallStateDetectionService : Service(), Handler.Callback {
     private val telephonyManager: TelephonyManager by lazy {
         getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
     }
+    private var lastHeartbeatTime = 0L
+    private var lastPushHeartbeatTime = 0L
     private val serviceJob by lazy { Job() }
     private val serviceScope by lazy { CoroutineScope(Dispatchers.IO + serviceJob) }
 
@@ -86,14 +89,14 @@ class CallStateDetectionService : Service(), Handler.Callback {
 
     @Inject
     lateinit var appPreference: AppPreference
-    
+
     override fun onBind(intent: Intent): IBinder? {
         return null
     }
 
     override fun onCreate() {
         super.onCreate()
-     appPreference.lastHearBeatTime = 0L
+        appPreference.lastHearBeatTime = 0L
         val logFile = File(getExternalFilesDir(null), "app_log.txt")
         logger = Logger("YourTag", logFile)
         TriggerReceiver.register(this)
@@ -173,10 +176,6 @@ class CallStateDetectionService : Service(), Handler.Callback {
     // Function to check if outgoing calls option is selected
     suspend fun isOutgoingCallsEnabled(): Boolean {
         var value = false
-        Log.e(
-            "fjhdgfj",
-            "isIncomingCallsEnabled: ${dbRepository.callerIDOptions.getCallerIdOptions()?.callerIdOptions}"
-        )
         value =
             dbRepository.callerIDOptions.getCallerIdOptions()?.callerIdOptions?.contains(
                 AllCallerIdOptions.Outgoing
@@ -196,7 +195,11 @@ class CallStateDetectionService : Service(), Handler.Callback {
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
         var handler: Handler? = Handler()
         var obtainMessage = Message()
-        ForegroundServiceContext.completeForegroundService(this, intent, "SensorService")
+        ForegroundServiceContext.completeForegroundService(
+            this,
+            intent,
+            "CallStateDetectionService"
+        )
         if (rootHandler == null) {
             if (connectIntent == null) {
                 connectIntent = intent
@@ -206,17 +209,25 @@ class CallStateDetectionService : Service(), Handler.Callback {
         } else if (intent == null) {
             return START_REDELIVER_INTENT
         } else {
+            Log.e("kmjiuhyg", "onStartCommand: 212$intent")
             try {
                 val obj =
                     if (intent.hasExtra(McsConstants.EXTRA_REASON)) intent.extras!![McsConstants.EXTRA_REASON] else intent
                 if (ACTION_HEARTBEAT == intent.action) {
-                 appPreference.lastHearBeatTime = System.currentTimeMillis()
-                    logger.logInfo("Heartbeat triggered at ${getCurrentTime(appPreference.lastHearBeatTime)}")
+                    serviceScope.launch {
+                        ///     appPreference.lastHearBeatTime = System.currentTimeMillis()
+                        lastHeartbeatTime = System.currentTimeMillis()
+                        dbRepository.timestampDao.updateLastHeartbeat(System.currentTimeMillis())
+                        logger.logInfo("Heartbeat triggered at ${getCurrentTime(lastHeartbeatTime)}")
+                    }
                     handler = rootHandler
                     obtainMessage = handler!!.obtainMessage(HEARTBEAT_INITIATED, obj)
                 } else if (McsConstants.ACTION_CONNECT == intent.action) {
                     handler = rootHandler
                     obtainMessage = handler!!.obtainMessage(SERVICE_STARTED, obj)
+                } else if (McsConstants.REMINDER == intent.action) {
+                    Log.e("kmjiuhyg", "onStartCommand: ${intent.getLongExtra("alarmID", 0L)}")
+                    triggerAlarm(intent.getLongExtra("alarmID", 0L))
                 }
                 handler!!.sendMessage(obtainMessage)
                 alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
@@ -369,40 +380,32 @@ class CallStateDetectionService : Service(), Handler.Callback {
             }
 
             PERIODIC_5_S -> {
-                try {
-                    val currentTime = System.currentTimeMillis()
-                    val lastHeartbeatTime = appPreference.lastHearBeatTime
-                    if (currentTime - lastHeartbeatTime <= ONE_MINUTE_FIFTEEN_SECONDS) {
-                        logger.logInfo("FiveSecExecLog")
-                     appPreference.lastCase44TriggerTime = 0L
-                    } else {
-                        logger.logWarning(
-                            "HeartbeatDelay: last was at ${
-                                getCurrentTime(
-                                    lastHeartbeatTime
-                                )
-                            }"
-                        )
-                        if (currentTime - appPreference.lastCase44TriggerTime > ONE_MINUTE) {
-                            logger.logInfo("InitiatingManualWork at ${getCurrentTime(currentTime)}")
+                serviceScope.launch {
+                    try {
+                        val currentTime = System.currentTimeMillis()
+                        if (currentTime - lastHeartbeatTime <= ONE_MINUTE_FIFTEEN_SECONDS || currentTime - lastPushHeartbeatTime <= ONE_MINUTE) {
+                            logger.logInfo("FiveSecExecLog")
+                        } else {
                             rootHandler?.sendEmptyMessage(INITIATING_MANUAL_WORK)
-                         appPreference.lastCase44TriggerTime = currentTime
                         }
+                        rootHandler?.removeMessages(PERIODIC_5_S)
+                        rootHandler?.sendEmptyMessageDelayed(PERIODIC_5_S, FIVE_SEC_DELAY)
+                    } catch (e: Exception) {
+                        // Remove any pending executions of message 43 (if any)
+                        logger.logError("PERIODIC_5_S: ${e.message}")
+                        logger.logError("after exception retrying for PERIODIC_5_S")
+                        rootHandler?.sendEmptyMessageDelayed(PERIODIC_5_S, FIVE_SEC_DELAY)
                     }
-                    rootHandler?.removeMessages(PERIODIC_5_S)
-                    rootHandler?.sendEmptyMessageDelayed(PERIODIC_5_S, FIVE_SEC_DELAY)
-                } catch (e: Exception) {
-                    // Remove any pending executions of message 43 (if any)
-                    logger.logError("PERIODIC_5_S: ${e.message}")
-                    logger.logError("after exception retrying for PERIODIC_5_S")
-                    rootHandler?.sendEmptyMessageDelayed(PERIODIC_5_S, FIVE_SEC_DELAY)
                 }
                 return true
             }
 
             INITIATING_MANUAL_WORK -> {
-             appPreference.lastHearBeatTime = System.currentTimeMillis()
-                startSilentPlayback(7000)
+                val currentTime = System.currentTimeMillis()
+                val duration = checkElapsedTimeOfHeartbeat(currentTime)
+                logger.logInfo("Pushing Heartbeat at ${getCurrentTime(currentTime)}")
+                lastPushHeartbeatTime = System.currentTimeMillis()
+                startSilentPlayback(duration)
             }
 
             CALL_STATE_RINGING -> {
@@ -432,6 +435,38 @@ class CallStateDetectionService : Service(), Handler.Callback {
         return false
     }
 
+
+    private fun checkElapsedTimeOfHeartbeat(currentTime: Long): Long {
+        val elapsedTime = currentTime - lastHeartbeatTime
+        val elapsedMinutes = elapsedTime / (60 * 1000) // Convert milliseconds to minutes
+        logger.logWarning("Heartbeat delayed by $elapsedMinutes minutes")
+        /// during the delay more actions can be perform to save service from doze
+        return when {
+            elapsedMinutes < 1 -> 5000
+
+            elapsedMinutes < 2 -> 5000
+
+            elapsedMinutes < 3 -> 5000
+
+            elapsedMinutes < 4 -> 5000
+
+            elapsedMinutes < 5 -> 5000
+
+            elapsedMinutes < 6 -> 5000
+
+            elapsedMinutes < 7 -> 6000
+
+            elapsedMinutes < 8 -> 7000
+
+            elapsedMinutes < 9 -> 7000
+
+            elapsedMinutes < 10 -> 8000
+
+            else -> 9000
+        }
+    }
+
+    @SuppressLint("ScheduleExactAlarm")
     @RequiresApi(Build.VERSION_CODES.M)
     fun scheduleHeartbeat(context: Context) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
@@ -445,7 +480,8 @@ class CallStateDetectionService : Service(), Handler.Callback {
                 heartbeatIntent!!
             )
         } else if (i5 < 19) {
-            alarmManager[AlarmManager.ELAPSED_REALTIME_WAKEUP, SystemClock.elapsedRealtime() + heartbeatMsFor] = heartbeatIntent!!
+            alarmManager[AlarmManager.ELAPSED_REALTIME_WAKEUP, SystemClock.elapsedRealtime() + heartbeatMsFor] =
+                heartbeatIntent!!
         } else {
             val i6 = heartbeatMsFor / 4
             alarmManager.setWindow(
@@ -523,6 +559,26 @@ class CallStateDetectionService : Service(), Handler.Callback {
         val dateFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
         val currentTime = Date(time)
         return dateFormat.format(currentTime)
+    }
+
+    private fun triggerAlarm(callerId: Long) {
+        CoroutineScope(Dispatchers.IO).launch {
+            val getReminder = dbRepository.reminder.getCallerIdOptions(callerId)
+            val logData = dbRepository.callLogDao.getCallLogsByCallerId(getReminder?.callerId ?: "")
+            Log.e("kjihgf", "triggerAlarm: $logData  ---->$getReminder")
+            if (getReminder?.status == true) {
+                NotificationHelper(this@CallStateDetectionService).showAlarmNotification(
+                    "Call Reminder",
+                    "${logData?.callNote}",
+                    "Reminder",
+                    getReminder!!.callerId
+                )
+                getReminder?.status = false
+                if (getReminder != null) {
+                    dbRepository.reminder.insertOrUpdateCallerIdOptions(getReminder)
+                }
+            }
+        }
     }
 
     companion object {

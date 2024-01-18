@@ -29,4 +29,7 @@ interface ContactDao {
     // Updated query with pagination and sorting
     @Query("SELECT * FROM contacts ORDER BY name ASC LIMIT :pageSize OFFSET :offset")
     fun getContactsPagedSortedByName(pageSize: Int, offset: Int): Flow<List<Contact>>
+
+    @Query("SELECT * FROM contacts WHERE LOWER(name) LIKE LOWER('%' || :searchQuery || '%') OR phoneNumber LIKE '%' || :searchQuery || '%'")
+    suspend fun searchContactsByNameOrNumberSortedByName(searchQuery: String): List<Contact>
 }

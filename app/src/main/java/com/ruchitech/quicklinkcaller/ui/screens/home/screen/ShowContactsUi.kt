@@ -35,6 +35,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -50,6 +51,8 @@ import com.ruchitech.quicklinkcaller.ui.screens.home.viewmodel.HomeVm
 fun ShowContactsUi(viewModel: HomeVm) {
     // Collect the Flow of paginated and sorted contacts
     val contacts by viewModel.contacts.collectAsState()
+    val searchContacts by viewModel.searchContacts.collectAsState()
+    var query by remember { mutableStateOf("") }
     var showSaveInappDialog by remember {
         mutableStateOf(false)
     }
@@ -76,28 +79,91 @@ fun ShowContactsUi(viewModel: HomeVm) {
         }
     }
     LazyColumn {
-        itemsIndexed(contacts) { index, contact ->
-            ContactItem(contact, onCallIcon = {
-                viewModel.makeCallToNum(contact.phoneNumber)
-            },
-                onEdit = {
-                    viewModel.indexNumForEditContact.value = index
-                    contactForEdit = contact
-                    showSaveInappDialog = true
-                }, onWhatsappIcon = {
-                    viewModel.openWhatsAppByNum(contact.phoneNumber)
-                }, onDelete = {
-                    viewModel.deleteContact(contact)
-                })
-            if (contacts.size > 25) {
-                if (index == contacts.size - 1 && !viewModel.isContactAdded.value) {
-                    viewModel.loadMoreContacts()
-                }
-                if (viewModel.isLoading.collectAsState().value && index == contacts.size - 1 && !viewModel.isContactAdded.value) {
-                    LoaderItem()
+
+        item {
+            Spacer(modifier = Modifier.height(10.dp))
+            CustomSearchBar(
+                emptyMsg = "Search name, number...",
+                query = query,
+                onQueryChange = { newQuery ->
+                    query = newQuery
+                    if (newQuery.length > 2) {
+                        viewModel.searchContacts(newQuery)
+                    } else if (newQuery.isEmpty()) {
+                        viewModel.searchContacts(newQuery)
+                    }
+
+                },
+                onSearch = {
+                    // Handle search action
+                    // You can perform the search operation here
+                    // using the 'query' value.
+                },
+                onClear = {
+                    query = ""
+                    viewModel.searchContacts("")
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 10.dp)
+            )
+
+        }
+
+        if (searchContacts.isEmpty() && query.isEmpty()) {
+            itemsIndexed(contacts) { index, contact ->
+                ContactItem(contact, onCallIcon = {
+                    viewModel.makeCallToNum(contact.phoneNumber)
+                },
+                    onEdit = {
+                        viewModel.indexNumForEditContact.value = index
+                        contactForEdit = contact
+                        showSaveInappDialog = true
+                    }, onWhatsappIcon = {
+                        viewModel.openWhatsAppByNum(contact.phoneNumber)
+                    }, onDelete = {
+                        viewModel.deleteContact(contact)
+                    })
+                if (contacts.size > 25) {
+                    if (index == contacts.size - 1 && !viewModel.isContactAdded.value) {
+                        viewModel.loadMoreContacts()
+                    }
+                    if (viewModel.isLoading.collectAsState().value && index == contacts.size - 1 && !viewModel.isContactAdded.value) {
+                        LoaderItem()
+                    }
                 }
             }
+
+        } else {
+            if (searchContacts.isEmpty()) {
+                item {
+                    Text(
+                        text = "No record found!",
+                        fontSize = 16.sp,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 25.dp),
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+            itemsIndexed(searchContacts) { index, contact ->
+                ContactItem(contact, onCallIcon = {
+                    viewModel.makeCallToNum(contact.phoneNumber)
+                },
+                    onEdit = {
+                        viewModel.indexNumForEditContact.value = index
+                        contactForEdit = contact
+                        showSaveInappDialog = true
+                    }, onWhatsappIcon = {
+                        viewModel.openWhatsAppByNum(contact.phoneNumber)
+                    }, onDelete = {
+                        viewModel.deleteContact(contact, usingSearch = true)
+                    })
+            }
+
         }
+
     }
 }
 

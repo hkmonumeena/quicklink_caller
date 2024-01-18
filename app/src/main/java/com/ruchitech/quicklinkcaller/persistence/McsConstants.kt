@@ -8,6 +8,7 @@ object McsConstants {
     var ACTION_RECONNECT = "com.ruchitech.quicklinkcaller.persistence.RECONNECT"
     var ACTION_SEND = "com.ruchitech.quicklinkcaller.persistence.SEND"
     var EXTRA_REASON = "com.ruchitech.quicklinkcaller.persistence.REASON"
+    var REMINDER = "com.ruchitech.quicklinkcaller.persistence.REMINDER"
     const val SERVICE_STARTED = 40
     const val HEARTBEAT_INITIATED = 41
     const val PERIODIC_5_S = 42

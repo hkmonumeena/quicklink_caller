@@ -1,5 +1,6 @@
 package com.ruchitech.quicklinkcaller.ui.screens.callerid.ui
 
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -15,11 +16,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
@@ -47,7 +49,10 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.ruchitech.quicklinkcaller.R
 import com.ruchitech.quicklinkcaller.contactutills.ContactHelper
+import com.ruchitech.quicklinkcaller.helper.formatTimestampToDate
 import com.ruchitech.quicklinkcaller.room.DbRepository
+import com.ruchitech.quicklinkcaller.room.data.Reminders
+import com.ruchitech.quicklinkcaller.ui.screens.connectedui.ReminderUi
 import com.ruchitech.quicklinkcaller.ui.theme.PurpleSolid
 import com.ruchitech.quicklinkcaller.ui.theme.TextColor
 import com.ruchitech.quicklinkcaller.ui.theme.sfSemibold
@@ -57,7 +62,7 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 
 
-@OptIn(DelicateCoroutinesApi::class)
+@OptIn(DelicateCoroutinesApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun PostCallInfoPopup(
     dbRepository: DbRepository,
@@ -70,6 +75,7 @@ fun PostCallInfoPopup(
     callLogNote: (number: String, note: String) -> Unit,
     onClose: () -> Unit,
     toastMsg: (msg: String) -> Unit,
+    onReminder: (hours: String, minutes: String, date: String) -> Unit
 ) {
     val context = LocalContext.current
     var noteStr by remember {
@@ -78,18 +84,24 @@ fun PostCallInfoPopup(
     var noteStrError by remember {
         mutableStateOf(false)
     }
+    var reminderVisible by remember {
+        mutableStateOf(false)
+    }
     var numberFrom by remember {
         mutableIntStateOf(0)  //1 for phonebook, 2 in-app book, 3 for both side saved // 0 unknown
     }
     var colorForName by remember { mutableStateOf(Color(0xFF323232)) }
 
     var contactName by remember { mutableStateOf("") }
+    var reminder by remember {
+        mutableStateOf<Reminders?>(null)
+    }
     DisposableEffect(number) {
         val job = GlobalScope.launch(Dispatchers.IO) {
             var checkName: String? = ""
             val contactDetails =
                 ContactHelper(context).getNameFromPhoneNumber(number) /// ContactHelper(context).getContactDetailsByPhoneNumber(number)
-            if (contactDetails.isEmpty() || contactDetails=="Unknown") {
+            if (contactDetails.isEmpty() || contactDetails == "Unknown") {
                 checkName = dbRepository.contact.getContactByPhoneNumber(number)?.name
                 contactName = if (!checkName.isNullOrEmpty()) {
                     numberFrom = 2
@@ -106,11 +118,26 @@ fun PostCallInfoPopup(
                 contactName = contactDetails.ifEmpty { "Unknown" }
                 // contactName = checkName ?: "Unknown - code102"
             }
+            reminder =  dbRepository.reminder.getReminderByCallerId(number)
         }
         onDispose {
             job.cancel()
         }
     }
+
+
+    if (reminderVisible) {
+        ReminderUi(reminder, onReminder = { hour, minutes, date ->
+            reminderVisible = false
+            val actualDate =
+                if (date == "Today") formatTimestampToDate(System.currentTimeMillis()) else date
+            onReminder(hour, minutes, actualDate)
+        }) {
+            reminderVisible = false
+        }
+    }
+
+
     Dialog(
         onDismissRequest = {
             onClose()
@@ -302,9 +329,12 @@ fun PostCallInfoPopup(
                         }
                     }
                     Spacer(modifier = Modifier.height(10.dp))
-                    Row(modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 10.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 10.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
 
 /*
                         Box(
@@ -339,78 +369,78 @@ fun PostCallInfoPopup(
                         }
 */
 
-                       /* Row(modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f)) {*/
+                        /* Row(modifier = Modifier
+                             .fillMaxWidth()
+                             .weight(1f)) {*/
 
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .weight(1f)
-                                    .height(35.dp), contentAlignment = Alignment.Center
-                            ) {
-                                IconButton(
-                                    modifier = Modifier,
-                                    onClick = {
-                                        callBack(number)
-                                    }) {
-                                    Icon(
-                                        modifier = Modifier
-                                            .padding(0.dp)
-                                            .size(35.dp),
-                                        tint = Color(0xFFC06312),
-                                        imageVector = Icons.Filled.Call,
-                                        contentDescription = "call button"
-                                    )
-                                }
-                            }
-
-
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .weight(1f)
-                                    .height(35.dp), contentAlignment = Alignment.Center
-                            ) {
-                                IconButton(
-                                    modifier = Modifier,
-                                    onClick = {
-                                        openWhatsapp(number)
-                                    }) {
-                                    Image(
-                                        modifier = Modifier
-                                            .padding(0.dp)
-                                            .size(35.dp),
-                                        painter = painterResource(id = R.drawable.whatsapp),
-                                        contentDescription = "whatsapp button"
-                                    )
-                                }
-                            }
-
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .weight(1f)
-                                    .height(35.dp)
-                                    , contentAlignment = Alignment.Center
-                            ) {
-                                IconButton(
-                                    modifier = Modifier,
-                                    onClick = {
-                                        openTextMsg(number)
-                                    }) {
-                                    Image(
-                                        modifier = Modifier
-                                            .padding(0.dp)
-                                            .size(35.dp),
-                                        painter = painterResource(id = R.drawable.text_msg),
-                                        contentDescription = "text msg button"
-                                    )
-                                }
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f)
+                                .height(35.dp), contentAlignment = Alignment.Center
+                        ) {
+                            IconButton(
+                                modifier = Modifier,
+                                onClick = {
+                                    callBack(number)
+                                }) {
+                                Icon(
+                                    modifier = Modifier
+                                        .padding(0.dp)
+                                        .size(35.dp),
+                                    tint = Color(0xFFC06312),
+                                    imageVector = Icons.Filled.Call,
+                                    contentDescription = "call button"
+                                )
                             }
                         }
 
-                  //  }
+
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f)
+                                .height(35.dp), contentAlignment = Alignment.Center
+                        ) {
+                            IconButton(
+                                modifier = Modifier,
+                                onClick = {
+                                    openWhatsapp(number)
+                                }) {
+                                Image(
+                                    modifier = Modifier
+                                        .padding(0.dp)
+                                        .size(35.dp),
+                                    painter = painterResource(id = R.drawable.whatsapp),
+                                    contentDescription = "whatsapp button"
+                                )
+                            }
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f)
+                                .height(35.dp), contentAlignment = Alignment.Center
+                        ) {
+                            IconButton(
+                                modifier = Modifier,
+                                onClick = {
+                                    openTextMsg(number)
+                                }) {
+                                Image(
+                                    modifier = Modifier
+                                        .padding(0.dp)
+                                        .size(35.dp),
+                                    painter = painterResource(id = R.drawable.text_msg),
+                                    contentDescription = "text msg button"
+                                )
+                            }
+                        }
+
+                    }
+
+                    //  }
 
                     Spacer(modifier = Modifier.height(15.dp))
                     Row(
@@ -466,6 +496,36 @@ fun PostCallInfoPopup(
                             )
                         }
 
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(0.2f)
+                                .height(35.dp), contentAlignment = Alignment.Center
+                        ) {
+                            IconButton(
+                                modifier = Modifier,
+                                onClick = {
+                                    if (noteStr.isNotEmpty()){
+                                        callLogNote(number, noteStr)
+                                        reminderVisible = true
+                                    }else{
+                                        Toast.makeText(
+                                            context,
+                                            "Please add note first",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+
+                                }) {
+                                Image(
+                                    modifier = Modifier
+                                        .padding(0.dp)
+                                        .size(35.dp),
+                                    imageVector = Icons.Filled.Notifications,
+                                    contentDescription = "text msg button"
+                                )
+                            }
+                        }
 
                     }
 

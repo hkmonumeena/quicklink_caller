@@ -20,7 +20,7 @@ data class CallLogsWithDetails(
     val callLogDetails: List<CallLogDetails>
 )
 
-@Entity(tableName = "Call_logs")
+@Entity(tableName = "Call_logs", indices = [Index(value = ["callerId"], unique = true)])
 data class CallLogs(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val callerId: String,
@@ -29,6 +29,7 @@ data class CallLogs(
     @TypeConverters(Converters::class)
     var callLogDetails: List<CallLogDetails> = mutableListOf()
 }
+
 
 @Entity(tableName = "Call_log_details", indices = [Index("callerId"), Index("date")])
 data class CallLogDetails(

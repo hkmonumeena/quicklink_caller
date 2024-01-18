@@ -423,7 +423,6 @@ fun PermissionHandlingUi(viewModel: PrepareDataVm) {
             }
             Spacer(modifier = Modifier.height(30.dp))
             Spacer(modifier = Modifier.height(30.dp))
-
             Button(
                 onClick = {
                     viewModel.startDataProcessing()

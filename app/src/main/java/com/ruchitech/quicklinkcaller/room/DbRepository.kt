@@ -15,4 +15,5 @@ class DbRepository @Inject constructor(
     val contact = databaseDao.contact()
     val callerIDOptions = databaseDao.callerIDOptions()
     val timestampDao = databaseDao.timestampDao()
+    val reminder = databaseDao.reminders()
 }

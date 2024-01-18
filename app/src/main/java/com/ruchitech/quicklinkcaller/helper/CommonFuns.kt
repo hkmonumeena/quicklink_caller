@@ -2,6 +2,8 @@ package com.ruchitech.quicklinkcaller.helper
 
 import android.Manifest
 import android.app.ActivityManager
+import android.app.AlarmManager
+import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -11,9 +13,13 @@ import android.provider.Settings
 import android.util.Log
 import android.widget.Toast
 import androidx.core.content.ContextCompat
+import androidx.core.content.ContextCompat.getSystemService
 import androidx.core.content.ContextCompat.startActivity
 import androidx.core.content.PermissionChecker
+import com.ruchitech.quicklinkcaller.persistence.CallStateDetectionService
+import com.ruchitech.quicklinkcaller.persistence.McsConstants
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
@@ -88,6 +94,12 @@ fun formatTimestampToDateTime(timestamp: Long): String {
     return dateFormat.format(date)
 }
 
+fun formatTimestampToDate(timestamp: Long): String {
+    val dateFormat = SimpleDateFormat("dd-MM-yyyy", Locale.getDefault())
+    val date = Date(timestamp)
+    return dateFormat.format(date)
+}
+
 fun Context.openWhatsapp(number: String) {
     try {
         val i = Intent(Intent.ACTION_VIEW)
@@ -129,6 +141,69 @@ fun Context.sendTextMessage(phoneNumber: String, message: String? = null) {
     startActivity(intent)
 }
 
+ fun Context.cancelExistingReminder(callerId: String) {
+     val existingIntent =
+         Intent(McsConstants.REMINDER, null, this, CallStateDetectionService::class.java)
+     val existingPendingIntent = PendingIntent.getService(
+         this,
+         callerId.toInt(),  // Use callerId as the requestCode to identify the PendingIntent
+         existingIntent,
+         PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
+     )
+
+     existingPendingIntent?.let {
+         val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
+         alarmManager.cancel(it)
+         it.cancel()
+     }
+ }
+
+fun isTimeInPast(time24Hours: String): Boolean {
+    val currentTime = Calendar.getInstance()
+    val sdf = SimpleDateFormat("HH:mm:ss", java.util.Locale.getDefault())
+
+    try {
+        val parsedTime = sdf.parse(time24Hours)
+        val calendar = Calendar.getInstance().apply {
+            time = parsedTime
+            set(currentTime.get(Calendar.YEAR), currentTime.get(Calendar.MONTH), currentTime.get(Calendar.DAY_OF_MONTH))
+        }
+
+        // Compare with the current time
+        return calendar.before(currentTime)
+    } catch (e: Exception) {
+        // Handle parsing exceptions
+        e.printStackTrace()
+    }
+
+    // Return false in case of errors
+    return false
+}
+
+fun isDateInPast(dateString: String): Boolean {
+    val currentDate = Calendar.getInstance()
+    val sdf = SimpleDateFormat("dd-MM-yyyy", java.util.Locale.getDefault())
+
+    try {
+        val parsedDate = sdf.parse(dateString)
+        val calendar = Calendar.getInstance().apply {
+            time = parsedDate
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+
+        // Compare with the current date
+        return calendar.before(currentDate)
+    } catch (e: Exception) {
+        // Handle parsing exceptions
+        e.printStackTrace()
+    }
+
+    // Return false in case of errors
+    return false
+}
 fun isValidEmail(email: String): Boolean {
     return android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()
 }

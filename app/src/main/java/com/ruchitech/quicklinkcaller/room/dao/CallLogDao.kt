@@ -4,13 +4,12 @@ import androidx.room.*
 import com.ruchitech.quicklinkcaller.room.data.CallLogDetails
 import com.ruchitech.quicklinkcaller.room.data.CallLogs
 import com.ruchitech.quicklinkcaller.room.data.CallLogsWithDetails
-import com.ruchitech.quicklinkcaller.room.data.Contact
 import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface CallLogDao {
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Transaction
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertCallLogs(callLogs: List<CallLogs>)
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
@@ -46,4 +45,9 @@ interface CallLogDao {
     // Insert or update multiple CallLogDetails entries
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertOrUpdateCallLogDetails(callLogDetails: List<CallLogDetails>)
+
+    @Query("SELECT * FROM Call_logs WHERE callerId IN (SELECT callerId FROM Call_log_details WHERE Call_logs.callNote LIKE '%' || :searchQuery || '%' OR Call_log_details.number LIKE '%' || :searchQuery || '%' OR Call_log_details.cachedName LIKE '%' || :searchQuery || '%' GROUP BY callerId HAVING MAX(date) = (SELECT MAX(date) FROM Call_log_details WHERE callerId = Call_logs.callerId)) ORDER BY (SELECT MAX(date) FROM Call_log_details WHERE callerId = Call_logs.callerId) DESC")
+    fun searchCallLogs(searchQuery: String): List<CallLogsWithDetails>
+
+
 }

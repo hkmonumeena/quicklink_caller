@@ -97,9 +97,12 @@ dependencies {
     annotationProcessor ("androidx.room:room-compiler:$room_version")
 
     // dialog sheets
-    implementation ("com.maxkeppeler.sheets-compose-dialogs:core:1.2.1")
-    implementation ("com.maxkeppeler.sheets-compose-dialogs:input:1.2.1")
-    implementation ("com.maxkeppeler.sheets-compose-dialogs:state:1.2.1")
+    implementation ("com.maxkeppeler.sheets-compose-dialogs:core:1.0.4")
+    implementation ("com.maxkeppeler.sheets-compose-dialogs:input:1.0.4")
+    implementation ("com.maxkeppeler.sheets-compose-dialogs:state:1.0.4")
+    implementation ("com.maxkeppeler.sheets-compose-dialogs:clock:1.0.4")
+    implementation ("com.maxkeppeler.sheets-compose-dialogs:calendar:1.0.4")
+
     //gson
     implementation ("com.google.code.gson:gson:2.10.1")
 }

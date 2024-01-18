@@ -7,11 +7,13 @@ import com.ruchitech.quicklinkcaller.room.dao.CallLogDao
 import com.ruchitech.quicklinkcaller.room.dao.CallerIdOptionsDao
 import com.ruchitech.quicklinkcaller.room.dao.ContactDao
 import com.ruchitech.quicklinkcaller.room.dao.DataDao
+import com.ruchitech.quicklinkcaller.room.dao.ReminderDao
 import com.ruchitech.quicklinkcaller.room.dao.TimestampDao
 import com.ruchitech.quicklinkcaller.room.data.CallLogDetails
 import com.ruchitech.quicklinkcaller.room.data.CallLogs
 import com.ruchitech.quicklinkcaller.room.data.CallerIdOptionsEntity
 import com.ruchitech.quicklinkcaller.room.data.Contact
+import com.ruchitech.quicklinkcaller.room.data.Reminders
 import com.ruchitech.quicklinkcaller.room.data.Timestamp
 import com.ruchitech.quicklinkcaller.room.data.User
 
@@ -23,9 +25,10 @@ import com.ruchitech.quicklinkcaller.room.data.User
         CallLogDetails::class,
         Contact::class,
         Timestamp::class,
-    CallerIdOptionsEntity::class
+        CallerIdOptionsEntity::class,
+        Reminders::class
     ],
-    version = 5,
+    version = 6,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -35,4 +38,5 @@ abstract class DatabaseDao : RoomDatabase() {
     abstract fun contact(): ContactDao
     abstract fun callerIDOptions(): CallerIdOptionsDao
     abstract fun timestampDao(): TimestampDao
+    abstract fun reminders(): ReminderDao
 }

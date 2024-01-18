@@ -57,7 +57,7 @@ public class ForegroundServiceContext extends ContextWrapper {
     }
 
     public static void completeForegroundService(Service service, Intent intent, String str) {
-        if (Build.VERSION.SDK_INT < 23 || intent == null || !intent.getBooleanExtra(EXTRA_FOREGROUND, false)) {
+        if (intent == null || !intent.getBooleanExtra(EXTRA_FOREGROUND, false)) {
             return;
         }
         String serviceName = getServiceName(service);

@@ -16,10 +16,15 @@ import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import com.quicklink.caller.ui.screens.callerid.ui.IncomingCallPopup
 import com.quicklink.caller.ui.screens.callerid.ui.OutgoingCallPopup
 import com.ruchitech.quicklinkcaller.PostCallActivity
+import com.ruchitech.quicklinkcaller.contactutills.CallLogHelper
+import com.ruchitech.quicklinkcaller.helper.AppPreference
 import com.ruchitech.quicklinkcaller.helper.CallType
+import com.ruchitech.quicklinkcaller.room.DbRepository
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 
-// you need extends LifecycleService and implement SavedStateRegistryOwner.
+@AndroidEntryPoint
 class CallerIdService() : LifecycleService(), SavedStateRegistryOwner {
     private val savedStateRegistryController = SavedStateRegistryController.create(this)
     private var contentView: View? = null
@@ -28,6 +33,14 @@ class CallerIdService() : LifecycleService(), SavedStateRegistryOwner {
     private val ONE: Int by lazy { 1 }
     private val TWO: Int by lazy { 2 }
     private val ZERO: Int by lazy { 0 }
+    @Inject
+    lateinit var appPreference: AppPreference
+    @Inject
+    lateinit var callLogHelper: CallLogHelper
+    @Inject
+    lateinit var dbRepository: DbRepository
+    private var dateTimeString = ""
+    private var callerId = ""
     override fun onCreate() {
         super.onCreate()
         savedStateRegistryController.performAttach()

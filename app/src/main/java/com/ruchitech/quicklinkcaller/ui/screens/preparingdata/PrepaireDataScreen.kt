@@ -38,8 +38,6 @@ import com.dawidraszka.composepermissionhandler.core.PermissionHandlerHost
 import com.dawidraszka.composepermissionhandler.core.PermissionHandlerHostState
 import com.dawidraszka.composepermissionhandler.core.PermissionHandlerResult
 import com.dawidraszka.composepermissionhandler.utils.showAppSettingsSnackbar
-import com.maxkeppeker.sheets.core.models.base.UseCaseState
-import com.maxkeppeker.sheets.core.models.base.rememberUseCaseState
 import com.maxkeppeler.sheets.state.StateDialog
 import com.maxkeppeler.sheets.state.models.ProgressIndicator
 import com.maxkeppeler.sheets.state.models.State
@@ -51,7 +49,7 @@ import kotlinx.coroutines.launch
 fun PrepareDataUi(viewModel: PrepareDataVm) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
-
+/*
     val sheetState = rememberUseCaseState(visible = false)
     val state = remember {
         val startState =
@@ -65,29 +63,29 @@ fun PrepareDataUi(viewModel: PrepareDataVm) {
         } else {
             sheetState.hide()
         }
-        /*state.value = State.Failure(labelText = "Fetching data failed. Trying again.")
+        *//*state.value = State.Failure(labelText = "Fetching data failed. Trying again.")
         delay(2000)
         state.value =
             State.Loading(labelText = "Fetching new data...", ProgressIndicator.Circular())
-        delay(2000)*/
+        delay(2000)*//*
     }
     if (viewModel.dataFetched.value) {
         state.value = State.Success(labelText = "Data fetched..!")
         sheetState.show()
-    }
+    }*/
 
     PermissionHandlingUi(viewModel)
-    StateDialog(
+  /*  StateDialog(
         state = sheetState,
         config = StateConfig(state = state.value),
-    )
+    )*/
 //
 
 }
 
 @OptIn(ExperimentalPermissionHandlerApi::class, ExperimentalMaterial3Api::class)
 @Composable
-fun SampleScreen(viewModel: PrepareDataVm, sheetState: UseCaseState) {
+fun SampleScreen(viewModel: PrepareDataVm) {
     val snackbarHostState = SnackbarHostState()
     val permissionHandlerHostState =
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -162,7 +160,6 @@ fun SampleScreen(viewModel: PrepareDataVm, sheetState: UseCaseState) {
                     }
 
                     PermissionHandlerResult.GRANTED -> {
-                        sheetState.show()
                         viewModel.getData()
                     }
 

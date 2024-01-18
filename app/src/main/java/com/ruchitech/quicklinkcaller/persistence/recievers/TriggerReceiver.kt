@@ -5,6 +5,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.os.Build
 import android.util.Log
+import android.widget.Toast
 import com.ruchitech.quicklinkcaller.helper.AppPreference
 import com.ruchitech.quicklinkcaller.helper.checkPermissions
 import com.ruchitech.quicklinkcaller.helper.isServiceRunning
@@ -12,6 +13,7 @@ import com.ruchitech.quicklinkcaller.persistence.CallStateDetectionService
 import com.ruchitech.quicklinkcaller.persistence.McsConstants
 import com.ruchitech.quicklinkcaller.persistence.McsConstants.ACTION_HEARTBEAT
 import com.ruchitech.quicklinkcaller.persistence.McsConstants.ACTION_SEND
+import com.ruchitech.quicklinkcaller.persistence.McsConstants.REMINDER
 import com.ruchitech.quicklinkcaller.persistence.foreground_notification.ForegroundServiceContext
 
 
@@ -22,6 +24,10 @@ class TriggerReceiver : ServiceControlReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         // DaggerAppComponent.builder().application(context.applicationContext as Application).build().inject(this)
         preference = AppPreference((context))
+        if (intent.action == McsConstants.REMINDER){
+            Log.e("polfkijuhyt", "onReceive: $intent ${intent.getStringExtra("data")}")
+            return
+        }
         if (!checkPermissions(context) || !preference.shouldForeground) return
         val putExtra: Intent
         val foregroundServiceContext: ForegroundServiceContext =
@@ -78,6 +84,7 @@ class TriggerReceiver : ServiceControlReceiver() {
                     intentFilter.addAction("com.ruchitech.quicklinkcaller.persistence.HEARTBEAT")
                     intentFilter.addAction("com.ruchitech.quicklinkcaller.persistence.RECONNECT")
                     intentFilter.addAction(ACTION_SEND)
+                    intentFilter.addAction(REMINDER)
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                         context.applicationContext.registerReceiver(
                             TriggerReceiver(),

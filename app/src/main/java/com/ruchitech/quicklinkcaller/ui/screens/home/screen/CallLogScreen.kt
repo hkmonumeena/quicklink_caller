@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -16,15 +17,23 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBox
 import androidx.compose.material.icons.filled.Call
+import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Divider
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -39,25 +48,21 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.maxkeppeker.sheets.core.models.base.IconSource
-import com.maxkeppeker.sheets.core.models.base.rememberUseCaseState
-import com.maxkeppeler.sheets.input.InputDialog
-import com.maxkeppeler.sheets.input.models.InputHeader
-import com.maxkeppeler.sheets.input.models.InputSelection
-import com.maxkeppeler.sheets.input.models.InputTextField
-import com.maxkeppeler.sheets.input.models.ValidationResult
 import com.ruchitech.quicklinkcaller.R
 import com.ruchitech.quicklinkcaller.helper.Event
 import com.ruchitech.quicklinkcaller.helper.EventEmitter
 import com.ruchitech.quicklinkcaller.helper.formatTimeAgo
-import com.ruchitech.quicklinkcaller.helper.formatTimestampToDateTime
+import com.ruchitech.quicklinkcaller.helper.formatTimestampToDate
 import com.ruchitech.quicklinkcaller.room.data.CallLogDetails
 import com.ruchitech.quicklinkcaller.room.data.CallLogsWithDetails
 import com.ruchitech.quicklinkcaller.room.data.Contact
 import com.ruchitech.quicklinkcaller.ui.screens.connectedui.AddNoteDialog
+import com.ruchitech.quicklinkcaller.ui.screens.connectedui.ReminderUi
 import com.ruchitech.quicklinkcaller.ui.screens.connectedui.SaveContactUi
 import com.ruchitech.quicklinkcaller.ui.screens.home.viewmodel.HomeVm
 import com.ruchitech.quicklinkcaller.ui.theme.sfMediumFont
@@ -81,10 +86,10 @@ enum class CallType {
 @Composable
 fun CallLogScreen(viewModel: HomeVm) {
     val callLogs by viewModel.callLogsData.collectAsState()
-    /*LaunchedEffect(callLogs) {
-        Log.e("fdmkjhnkgf", "CallLogScreen: ${Gson().toJson(callLogs)}")
-    }
-*/
+    val searchCallLog by viewModel.searchCallLogs.collectAsState()
+    val reminder by viewModel.reminder.collectAsState()
+    var query by remember { mutableStateOf("") }
+
     val noteText = remember {
         mutableStateOf<String?>(null)
     }
@@ -101,7 +106,25 @@ fun CallLogScreen(viewModel: HomeVm) {
     var showAddNoteDialog by remember {
         mutableStateOf(false)
     }
+    var reminderVisible by remember {
+        mutableStateOf(false)
+    }
 
+    if (viewModel.showReminderUi.value) {
+        ReminderUi(reminder, onReminder = { hour, minutes, date ->
+            viewModel.showReminderUi.value = false
+            val actualDate =
+                if (date == "Today") formatTimestampToDate(System.currentTimeMillis()) else date
+            viewModel.callLogForReminder.value?.callLogs?.callerId?.let {
+                viewModel.setAlarm(
+                    hour, minutes, actualDate,
+                    it
+                )
+            }
+        }) {
+            viewModel.showReminderUi.value = false
+        }
+    }
     if (showAddNoteDialog) {
         AddNoteDialog(viewModel, noteText.value, onDismiss = {
             noteText.value = ""
@@ -117,49 +140,118 @@ fun CallLogScreen(viewModel: HomeVm) {
         }
     }
 
-    LazyColumn {
-        item {
-            Text(
-                text = "Last Sync Time was: ${formatTimestampToDateTime(viewModel.lastSyncTime.value)}",
-                modifier = Modifier.padding(vertical = 15.dp, horizontal = 10.dp),
-                fontFamily = sfMediumFont,
-                fontSize = 10.sp
-            )
-        }
-        itemsIndexed(callLogs) { index, callLog ->
-            CallLogItem(
-                callLog.callLogDetails.maxByOrNull { it.date }!!,
-                callLog,
-                onCallIcon = {
-                    viewModel.makeCallToNum(callLog.callLogs.callerId)
-                },
-                onSaveInPhonebook = {
-                    viewModel.saveNumberInPhonebook(
-                        callLog.callLogs.callerId,
-                        callLog.callLogs.callLogDetails[0].cachedName ?: ""
-                    )
-                },
-                onWhatsappIcon = {
-                    viewModel.openWhatsAppByNum(callLog.callLogs.callerId)
-                },
-            ) {
-                indexClicked.value = index
-                callLogsWithDetails.value = callLog
-                noteText.value = callLog.callLogs.callNote
-                noteID.value = callLog.callLogs.callerId
-                showAddNoteDialog = true
-                // viewModel.openKeyboardWithoutFocus()
-            }
+    Column(modifier = Modifier.background(Color.Transparent)) {
+        Spacer(modifier = Modifier.height(10.dp))
+        CustomSearchBar(
+            query = query,
+            onQueryChange = { newQuery ->
+                query = newQuery
+                if (newQuery.length > 2) {
+                    viewModel.searchCallLogs(newQuery)
+                } else if (newQuery.isEmpty()) {
+                    viewModel.searchCallLogs(newQuery)
+                }
 
-            // Load more data when reaching the end of the list
-            Log.e("fdkfdjkfd", "CallLogScreen: $index  ${viewModel.isNoteFieldOpen.value}")
-            if (index == callLogs.size - 1 && !viewModel.isNoteFieldOpen.value) {
-                viewModel.loadMoreData()
-            }
-            // Show loader if more data is being loaded
-            if (viewModel.isLoading.collectAsState().value && index == callLogs.size - 1 && !viewModel.isNoteFieldOpen.value) {
-                Log.e("fdjkldgdf", "CallLogScreen: loding")
-                LoaderItem()  // You need to create a composable for the loader
+            },
+            onSearch = {
+                // Handle search action
+                // You can perform the search operation here
+                // using the 'query' value.
+            },
+            onClear = {
+                query = ""
+                viewModel.searchCallLogs("")
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 10.dp)
+        )
+        LazyColumn {
+            /*  item {
+                  Text(
+                      text = "Last Sync Time was: ${formatTimestampToDateTime(viewModel.lastSyncTime.value)}",
+                      modifier = Modifier.padding(vertical = 15.dp, horizontal = 10.dp),
+                      fontFamily = sfMediumFont,
+                      fontSize = 10.sp
+                  )
+              }*/
+            if (searchCallLog.isEmpty() && query.isEmpty()) {
+                itemsIndexed(callLogs) { index, callLog ->
+                    CallLogItem(
+                        callLog.callLogDetails.maxByOrNull { it.date }!!,
+                        callLog,
+                        onCallIcon = {
+                            viewModel.makeCallToNum(callLog.callLogs.callerId)
+                        },
+                        onSaveInPhonebook = {
+                            viewModel.saveNumberInPhonebook(
+                                callLog.callLogs.callerId,
+                                callLog.callLogs.callLogDetails[0].cachedName ?: ""
+                            )
+                        },
+                        onAddAlarm = {
+                            viewModel.onAddNewAlarm(callLog)
+                        },
+                        onWhatsappIcon = {
+                            viewModel.openWhatsAppByNum(callLog.callLogs.callerId)
+                        },
+                    ) {
+                        indexClicked.value = index
+                        callLogsWithDetails.value = callLog
+                        noteText.value = callLog.callLogs.callNote
+                        noteID.value = callLog.callLogs.callerId
+                        showAddNoteDialog = true
+                        // viewModel.openKeyboardWithoutFocus()
+                    }
+                    if (index == callLogs.size - 1 && !viewModel.isNoteFieldOpen.value) {
+                        viewModel.loadMoreData()
+                    }
+                    // Show loader if more data is being loaded
+                    if (viewModel.isLoading.collectAsState().value && index == callLogs.size - 1 && !viewModel.isNoteFieldOpen.value) {
+                        LoaderItem()
+                    }
+                }
+            } else {
+                if (searchCallLog.isEmpty()) {
+                    item {
+                        Text(
+                            text = "No record found!",
+                            fontSize = 16.sp,
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 25.dp),
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+
+                itemsIndexed(searchCallLog) { index, callLog ->
+                    CallLogItem(
+                        callLog.callLogDetails.maxByOrNull { it.date }!!,
+                        callLog,
+                        onCallIcon = {
+                            viewModel.makeCallToNum(callLog.callLogs.callerId)
+                        },
+                        onSaveInPhonebook = {
+                            viewModel.saveNumberInPhonebook(
+                                callLog.callLogs.callerId,
+                                callLog.callLogs.callLogDetails[0].cachedName ?: ""
+                            )
+                        },
+                        onAddAlarm = {
+                            viewModel.onAddNewAlarm(callLog)
+                        },
+                        onWhatsappIcon = {
+                            viewModel.openWhatsAppByNum(callLog.callLogs.callerId)
+                        },
+                    ) {
+                        indexClicked.value = index
+                        callLogsWithDetails.value = callLog
+                        noteText.value = callLog.callLogs.callNote
+                        noteID.value = callLog.callLogs.callerId
+                        showAddNoteDialog = true
+                        // viewModel.openKeyboardWithoutFocus()
+                    }
+                }
+
             }
         }
     }
@@ -185,6 +277,7 @@ fun CallLogItem(
     onCallIcon: () -> Unit,
     onWhatsappIcon: () -> Unit,
     onSaveInPhonebook: () -> Unit,
+    onAddAlarm: () -> Unit,
     onAddNote: () -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
@@ -273,7 +366,7 @@ fun CallLogItem(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.End
                         ) {
-                            Box() {
+                            Box {
                                 DropdownMenu(
                                     expanded = expanded,
                                     onDismissRequest = { expanded = false },
@@ -319,6 +412,19 @@ fun CallLogItem(
                                     .padding(3.dp)
                                     .clickable {
                                         onAddNote()
+                                    }
+                            )
+
+                            Spacer(modifier = Modifier.width(5.dp))
+                            Icon(
+                                imageVector = Icons.Default.Notifications,
+                                contentDescription = null,
+                                tint = Color.Gray,
+                                modifier = Modifier
+                                    .size(25.dp)
+                                    .padding(3.dp)
+                                    .clickable {
+                                        onAddAlarm()
                                     }
                             )
                             Spacer(modifier = Modifier.width(5.dp))
@@ -372,5 +478,84 @@ fun CallLogItem(
                 .fillMaxWidth()
                 .padding(horizontal = 10.dp), thickness = 0.5.dp
         )
+    }
+}
+
+@Composable
+fun CustomSearchBar(
+    query: String,
+    onQueryChange: (String) -> Unit,
+    onSearch: () -> Unit,
+    onClear: () -> Unit,
+    modifier: Modifier = Modifier,
+    emptyMsg:String = "Search notes, name, number..."
+) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(35.dp)
+            .background(Color.LightGray, RoundedCornerShape(20.dp))
+            .padding(horizontal = 10.dp)
+    ) {
+        IconButton(
+            onClick = onSearch,
+            modifier = Modifier
+                .align(Alignment.CenterStart)
+                .padding(0.dp)
+        ) {
+            Icon(imageVector = Icons.Default.Search, contentDescription = null, tint = Color.Gray)
+        }
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 35.dp, bottom = 0.dp),
+        ) {
+            if (query.isEmpty()) {
+                Text(
+                    text = emptyMsg,
+                    color = Color.Gray,
+                    modifier = Modifier
+                        .padding(start = 8.dp)
+                        .align(Alignment.CenterStart)
+                )
+            }
+            BasicTextField(
+                value = query,
+                onValueChange = { onQueryChange(it) },
+                textStyle = TextStyle(color = Color.Black, fontSize = 16.sp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 0.dp, bottom = 0.dp),
+                keyboardOptions = KeyboardOptions.Default.copy(
+                    imeAction = ImeAction.Search
+                ),
+                keyboardActions = KeyboardActions(
+                    onSearch = {
+                        onSearch()
+                    }
+                ),
+                decorationBox = { innerTextField ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .padding(vertical = 8.dp), // Adjusted vertical padding
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        innerTextField()
+                        // Clear text icon at the end
+                        if (query.isNotEmpty()) {
+                            IconButton(onClick = onClear) {
+                                Icon(
+                                    imageVector = Icons.Default.Clear,
+                                    contentDescription = null,
+                                    tint = Color.Gray
+                                )
+                            }
+                        }
+                    }
+                }
+            )
+        }
     }
 }

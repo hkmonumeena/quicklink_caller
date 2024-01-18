@@ -23,7 +23,6 @@
     <uses-permission android:name="android.permission.SEND_SMS" />
 
 
-
     <application
         android:name=".MyApp"
         android:allowBackup="false"
@@ -93,6 +92,7 @@
                 <action android:name="com.ruchitech.quicklinkcaller.persistence.HEARTBEAT" />
                 <action android:name="com.ruchitech.quicklinkcaller.persistence.ACK" />
                 <action android:name="com.ruchitech.quicklinkcaller.persistence.SEND" />
+                <action android:name="com.ruchitech.quicklinkcaller.persistence.REMINDER" />
                 <action android:name="TEST" />
             </intent-filter>
             <intent-filter>
@@ -104,11 +104,17 @@
             </intent-filter>
         </receiver>
 
+        <receiver
+            android:name=".persistence.recievers.AlarmReceiver"
+            android:exported="false" />
+        <receiver android:name=".persistence.recievers.NotificationReceiver" />
+
+
         <service
             android:name=".fcm.MyFirebaseMessagingService"
             android:exported="true">
             <intent-filter>
-                <action android:name="com.google.firebase.MESSAGING_EVENT"/>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
             </intent-filter>
         </service>
     </application>
