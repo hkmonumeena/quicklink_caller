@@ -118,7 +118,11 @@ fun PostCallInfoPopup(
                 contactName = contactDetails.ifEmpty { "Unknown" }
                 // contactName = checkName ?: "Unknown - code102"
             }
-            reminder =  dbRepository.reminder.getReminderByCallerId(number)
+            reminder = dbRepository.reminder.getReminderByCallerId(number)
+            val callLogData = dbRepository.callLogDao.getCallLogsByCallerId(number)
+            if (callLogData != null) {
+                noteStr = callLogData.callNote ?: ""
+            }
         }
         onDispose {
             job.cancel()
@@ -505,10 +509,10 @@ fun PostCallInfoPopup(
                             IconButton(
                                 modifier = Modifier,
                                 onClick = {
-                                    if (noteStr.isNotEmpty()){
+                                    if (noteStr.isNotEmpty()) {
                                         callLogNote(number, noteStr)
                                         reminderVisible = true
-                                    }else{
+                                    } else {
                                         Toast.makeText(
                                             context,
                                             "Please add note first",

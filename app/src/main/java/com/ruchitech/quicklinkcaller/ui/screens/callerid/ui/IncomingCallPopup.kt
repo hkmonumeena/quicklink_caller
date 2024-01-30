@@ -1,4 +1,4 @@
-package com.quicklink.caller.ui.screens.callerid.ui
+package com.ruchitech.quicklinkcaller.ui.screens.callerid.ui
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background

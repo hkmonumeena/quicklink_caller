@@ -29,9 +29,11 @@ import com.ruchitech.quicklinkcaller.helper.makePhoneCall
 import com.ruchitech.quicklinkcaller.helper.openWhatsapp
 import com.ruchitech.quicklinkcaller.helper.saveNumberToContacts
 import com.ruchitech.quicklinkcaller.navhost.Screen
+import com.ruchitech.quicklinkcaller.navhost.routes.ChildCallLogRoute
 import com.ruchitech.quicklinkcaller.persistence.CallStateDetectionService
 import com.ruchitech.quicklinkcaller.persistence.McsConstants
 import com.ruchitech.quicklinkcaller.room.DbRepository
+import com.ruchitech.quicklinkcaller.room.data.CallLogDetails
 import com.ruchitech.quicklinkcaller.room.data.CallLogsWithDetails
 import com.ruchitech.quicklinkcaller.room.data.Contact
 import com.ruchitech.quicklinkcaller.room.data.Reminders
@@ -152,6 +154,7 @@ class HomeVm @Inject constructor(
         viewModelScope.launch {
             dbRepository.callLogDao.getPaginatedCallLogs(pageSize, currentPage.value * pageSize)
                 .collectLatest { callLogsList ->
+                    Log.e("ijuhygtff", "loadLogs: $callLogsList")
                     try {
                         // Start loading
                         if (isNoteFieldOpen.value) {
@@ -209,6 +212,7 @@ class HomeVm @Inject constructor(
     fun searchCallLogs(query: String) {
         CoroutineScope(Dispatchers.IO).launch {
             val data = dbRepository.callLogDao.searchCallLogs(query)
+            Log.e("kjhgfjihu", "searchCallLogs: $data")
             if (data.isNotEmpty() && query.isNotEmpty() || query.isNotBlank()) {
                 val sortedCallLogs = data.map { callLogsWithDetails ->
                     callLogsWithDetails.copy(
@@ -315,6 +319,18 @@ class HomeVm @Inject constructor(
                 isNoteFieldOpen.value = false
             } else {
                 showSnackbar("Error in adding note")
+            }
+        }
+    }
+
+    fun insertNoteOnCallLogChild(newNote: String, value: Long) {
+        CoroutineScope(Dispatchers.IO).launch {
+            val dataToUpdate = dbRepository.callLogDao.getCallLogsByCallerId(value)
+            val tempData = dataToUpdate?.copy(callNote = newNote)
+            if (tempData != null) {
+                dbRepository.callLogDao.insertOrUpdateCallLogs(tempData)
+                delay(1200)
+                isNoteFieldOpen.value = false
             }
         }
     }
@@ -524,6 +540,10 @@ class HomeVm @Inject constructor(
                 reminderPendingIntent!!
             )
         }
+    }
+
+    fun navigateToCallLogDetails(key1: String, key2: String, key3: CallLogDetails?) {
+        navigateToRoute(ChildCallLogRoute.withArgs(key1, key2, key3?.cachedName ?: "Unknown"))
     }
 
 }

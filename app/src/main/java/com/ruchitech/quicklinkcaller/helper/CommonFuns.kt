@@ -22,6 +22,7 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+import java.util.concurrent.TimeUnit
 
 fun isServiceRunning(context: Context, serviceClass: Class<*>): Boolean {
     val manager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
@@ -204,6 +205,35 @@ fun isDateInPast(dateString: String): Boolean {
     // Return false in case of errors
     return false
 }
+
+fun formatDuration(durationInSeconds: Long): String {
+    val hours = durationInSeconds / 3600
+    val minutes = (durationInSeconds % 3600) / 60
+    val seconds = durationInSeconds % 60
+
+    val formattedDuration = StringBuilder()
+
+    if (hours > 0) {
+        formattedDuration.append("$hours h ")
+    }
+
+    if (minutes > 0) {
+        formattedDuration.append("$minutes m ")
+    }
+
+    formattedDuration.append("$seconds s")
+
+    return formattedDuration.toString()
+}
+
+fun formatMilliSecondsToDateTime(milliSeconds: Long): String {
+    val formatter = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
+    val calendar = Calendar.getInstance()
+    calendar.timeInMillis = milliSeconds
+    return formatter.format(calendar.time)
+}
+
+
 fun isValidEmail(email: String): Boolean {
     return android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()
 }

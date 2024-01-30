@@ -34,7 +34,11 @@ interface CallLogDao {
     @Query("SELECT * FROM Call_logs ORDER BY (SELECT MAX(date) FROM Call_log_details WHERE callerId = Call_logs.callerId) DESC LIMIT :pageSize OFFSET :offset")
     fun getPaginatedCallLogs(pageSize: Int, offset: Int): Flow<List<CallLogsWithDetails>>
 
+
     // Query to get a CallLogs object based on callerId
+    @Query("SELECT * FROM Call_log_details WHERE id = :byId")
+    suspend fun getCallLogsByCallerId(byId: Long): CallLogDetails?
+
     @Query("SELECT * FROM Call_logs WHERE callerId = :callerId")
     suspend fun getCallLogsByCallerId(callerId: String): CallLogs?
 
@@ -42,12 +46,26 @@ interface CallLogDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertOrUpdateCallLogs(callLogs: CallLogs)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertOrUpdateCallLogs(callLogs: CallLogDetails)
+
     // Insert or update multiple CallLogDetails entries
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertOrUpdateCallLogDetails(callLogDetails: List<CallLogDetails>)
 
-    @Query("SELECT * FROM Call_logs WHERE callerId IN (SELECT callerId FROM Call_log_details WHERE Call_logs.callNote LIKE '%' || :searchQuery || '%' OR Call_log_details.number LIKE '%' || :searchQuery || '%' OR Call_log_details.cachedName LIKE '%' || :searchQuery || '%' GROUP BY callerId HAVING MAX(date) = (SELECT MAX(date) FROM Call_log_details WHERE callerId = Call_logs.callerId)) ORDER BY (SELECT MAX(date) FROM Call_log_details WHERE callerId = Call_logs.callerId) DESC")
+    @Query("SELECT * FROM Call_logs " +
+            "WHERE callerId IN (SELECT DISTINCT callerId FROM Call_log_details " +
+            "WHERE callNote LIKE '%' || :searchQuery || '%' OR number LIKE '%' || :searchQuery || '%' OR cachedName LIKE '%' || :searchQuery || '%') " +
+            "ORDER BY (SELECT MAX(date) FROM Call_log_details WHERE callerId = Call_logs.callerId) DESC")
     fun searchCallLogs(searchQuery: String): List<CallLogsWithDetails>
 
 
+
+
+    @Query("SELECT * FROM Call_log_details WHERE callerId = :callerId ORDER BY date DESC LIMIT :pageSize OFFSET :offset")
+     fun getPaginatedCallLogs(
+        callerId: String,
+        pageSize: Int,
+        offset: Int
+    ): Flow<List<CallLogDetails>?>
 }

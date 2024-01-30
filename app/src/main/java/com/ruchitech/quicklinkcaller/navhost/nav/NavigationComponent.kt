@@ -8,6 +8,7 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import com.ruchitech.quicklinkcaller.navhost.Screen
+import com.ruchitech.quicklinkcaller.navhost.routes.ChildCallLogRoute
 import com.ruchitech.quicklinkcaller.navhost.routes.HomeRoute
 import com.ruchitech.quicklinkcaller.navhost.routes.PrepairDataRoute
 import com.ruchitech.quicklinkcaller.navhost.routes.SettingsRoute
@@ -31,5 +32,6 @@ fun NavigationComponent(
         PrepairDataRoute.composable(this, navHostController, snackbarHostState)
         HomeRoute.composable(this, navHostController, snackbarHostState)
         SettingsRoute.composable(this, navHostController, snackbarHostState)
+        ChildCallLogRoute.composable(this, navHostController, snackbarHostState)
     }
 }

@@ -78,7 +78,7 @@ fun SettingsUi(viewModel: SettingsVm) {
             Text(text = "Select Caller ID Options", fontFamily = sfMediumFont, fontSize = 20.sp)
             // CheckBox for Incoming Calls
             CheckBoxOption(
-                enabled = false,
+                enabled = true,
                 text = "Incoming Calls",
                 checked = selectedOptions?.contains(AllCallerIdOptions.Incoming) == true,
                 onCheckedChange = { isChecked ->
@@ -94,7 +94,7 @@ fun SettingsUi(viewModel: SettingsVm) {
 
             // CheckBox for Outgoing Calls
             CheckBoxOption(
-                enabled = false,
+                enabled = true,
                 text = "Outgoing Calls",
                 checked = selectedOptions?.contains(AllCallerIdOptions.Outgoing) == true,
                 onCheckedChange = { isChecked ->

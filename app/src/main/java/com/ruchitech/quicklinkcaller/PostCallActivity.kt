@@ -136,7 +136,6 @@ class PostCallActivity : ComponentActivity() {
                 true
             )
             dateTimeString = "$hour:$minutes:00 $date"
-            Log.e("fkodjhsg", "setAlarm: $dateTimeString")
             setExactReminder(data)
         }
         Toast.makeText(this, "Reminder set successfully", Toast.LENGTH_SHORT).show()
@@ -265,7 +264,6 @@ class PostCallActivity : ComponentActivity() {
                 Toast.makeText(this, "Failed to save note!", Toast.LENGTH_SHORT).show()
             }
         }
-
     }
 
 }

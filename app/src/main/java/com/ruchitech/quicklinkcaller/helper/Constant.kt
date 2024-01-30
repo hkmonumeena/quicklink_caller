@@ -6,5 +6,6 @@ object Constant {
         const val SplashRoute =  "splash_screen"
         const val PrepareRoute =  "prepare_data_screen"
         const val SettingsRoute =  "settings_screen"
+        const val ChildCallLogRoute =  "childcalllog_screen"
     }
 }

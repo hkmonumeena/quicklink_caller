@@ -130,13 +130,13 @@ class MainActivity : ComponentActivity() {
                                                     label = "Add New Contact"
                                                 ) {
                                                     showSaveInappDialog = true
-                                                }/*,
+                                                },
                                                 FabItem(
                                                     icon = painterResource(id = R.drawable.baseline_settings_24),
                                                     label = "Settings"
                                                 ) {
                                                     EventEmitter.postEvent(Event.HomeVm(2, null))
-                                                }*/), onStateChanged = {
+                                                }), onStateChanged = {
 
                                             }
                                         )

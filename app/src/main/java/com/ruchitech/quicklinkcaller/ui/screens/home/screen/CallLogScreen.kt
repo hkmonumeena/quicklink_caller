@@ -94,7 +94,7 @@ fun CallLogScreen(viewModel: HomeVm) {
         mutableStateOf<String?>(null)
     }
     val noteID = remember {
-        mutableStateOf<String>("")
+        mutableStateOf(0L)
     }
     val callLogsWithDetails = remember {
         mutableStateOf<CallLogsWithDetails?>(null)
@@ -102,11 +102,11 @@ fun CallLogScreen(viewModel: HomeVm) {
     val indexClicked = remember {
         mutableStateOf<Int>(0)
     }
+    val indexOfChildLog = remember {
+        mutableStateOf<Int>(0)
+    }
 
     var showAddNoteDialog by remember {
-        mutableStateOf(false)
-    }
-    var reminderVisible by remember {
         mutableStateOf(false)
     }
 
@@ -130,12 +130,16 @@ fun CallLogScreen(viewModel: HomeVm) {
             noteText.value = ""
             showAddNoteDialog = false
         }) { newNote ->
+            noteText.value = newNote
             val tempList = callLogs.toMutableList()
-            val cl = callLogsWithDetails.value?.callLogs?.copy(callNote = newNote)
-            tempList[indexClicked.value] =
-                cl?.let { callLogsWithDetails.value?.copy(callLogs = it) }!!
+            val cl = callLogsWithDetails.value?.callLogs?.callLogDetails?.toMutableList()
+            cl?.set(indexOfChildLog.value,cl[indexOfChildLog.value].copy(callNote = noteText.value))
+            val newData = tempList[indexClicked.value]
+            newData.callLogDetails = cl?: emptyList()
+            newData.callLogs.callNote = noteText.value
+            tempList[indexClicked.value] = newData
             viewModel.updateCallLogByCallerId(tempList)
-            viewModel.insertNoteOnCallLog(newNote, noteID.value)
+            viewModel.insertNoteOnCallLogChild(newNote, noteID.value)
             showAddNoteDialog = false
         }
     }
@@ -178,6 +182,8 @@ fun CallLogScreen(viewModel: HomeVm) {
             if (searchCallLog.isEmpty() && query.isEmpty()) {
                 itemsIndexed(callLogs) { index, callLog ->
                     CallLogItem(
+                        latestNote = callLog.callLogDetails.filter { !it.callNote.isNullOrEmpty() }
+                            .maxByOrNull { it.date },
                         callLog.callLogDetails.maxByOrNull { it.date }!!,
                         callLog,
                         onCallIcon = {
@@ -195,14 +201,21 @@ fun CallLogScreen(viewModel: HomeVm) {
                         onWhatsappIcon = {
                             viewModel.openWhatsAppByNum(callLog.callLogs.callerId)
                         },
-                    ) {
-                        indexClicked.value = index
-                        callLogsWithDetails.value = callLog
-                        noteText.value = callLog.callLogs.callNote
-                        noteID.value = callLog.callLogs.callerId
-                        showAddNoteDialog = true
-                        // viewModel.openKeyboardWithoutFocus()
-                    }
+                        onParentClick = {
+                            Log.e("okijuhygtf", "CallLogScreen: ${callLog.callLogDetails.size}")
+                            viewModel.navigateToCallLogDetails(
+                                callLog.callLogs.callerId,
+                                callLog.callLogs.id.toString(),
+                                callLog.callLogs.callLogDetails.maxByOrNull { it.date }
+                            )
+                        }, onAddNote = {
+                            indexClicked.value = index
+                            indexOfChildLog.value = callLog.callLogDetails.indexOf(it)
+                            callLogsWithDetails.value = callLog
+                            noteText.value = it.callNote
+                            noteID.value = it.id
+                            showAddNoteDialog = true
+                        })
                     if (index == callLogs.size - 1 && !viewModel.isNoteFieldOpen.value) {
                         viewModel.loadMoreData()
                     }
@@ -217,7 +230,9 @@ fun CallLogScreen(viewModel: HomeVm) {
                         Text(
                             text = "No record found!",
                             fontSize = 16.sp,
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 25.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 25.dp),
                             textAlign = TextAlign.Center
                         )
                     }
@@ -225,6 +240,8 @@ fun CallLogScreen(viewModel: HomeVm) {
 
                 itemsIndexed(searchCallLog) { index, callLog ->
                     CallLogItem(
+                        latestNote = callLog.callLogDetails.filter { !it.callNote.isNullOrEmpty() }
+                            .maxByOrNull { it.date },
                         callLog.callLogDetails.maxByOrNull { it.date }!!,
                         callLog,
                         onCallIcon = {
@@ -241,15 +258,21 @@ fun CallLogScreen(viewModel: HomeVm) {
                         },
                         onWhatsappIcon = {
                             viewModel.openWhatsAppByNum(callLog.callLogs.callerId)
+                        }, onParentClick = {
+                            viewModel.navigateToCallLogDetails(
+                                callLog.callLogs.callerId,
+                                callLog.callLogs.id.toString(),
+                                callLog.callLogDetails.maxByOrNull { it.date }
+                            )
                         },
-                    ) {
-                        indexClicked.value = index
-                        callLogsWithDetails.value = callLog
-                        noteText.value = callLog.callLogs.callNote
-                        noteID.value = callLog.callLogs.callerId
-                        showAddNoteDialog = true
-                        // viewModel.openKeyboardWithoutFocus()
-                    }
+                        onAddNote = {
+                            indexClicked.value = index
+                            indexOfChildLog.value = callLog.callLogDetails.indexOf(it)
+                            callLogsWithDetails.value = callLog
+                            noteText.value = it.callNote
+                            noteID.value = it.id
+                            showAddNoteDialog = true
+                        })
                 }
 
             }
@@ -272,14 +295,17 @@ fun LoaderItem() {
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun CallLogItem(
+    latestNote: CallLogDetails?,
     callLog: CallLogDetails,
     callLog1: CallLogsWithDetails,
     onCallIcon: () -> Unit,
     onWhatsappIcon: () -> Unit,
     onSaveInPhonebook: () -> Unit,
     onAddAlarm: () -> Unit,
-    onAddNote: () -> Unit
+    onAddNote: ( callLog: CallLogDetails) -> Unit,
+    onParentClick: () -> Unit
 ) {
+    Log.e("okijuhyghjk", "CallLogItem: ${callLog.callNote}")
     var expanded by remember { mutableStateOf(false) }
     var showSaveInappDialog by remember {
         mutableStateOf(false)
@@ -306,7 +332,10 @@ fun CallLogItem(
     Column(modifier = Modifier.padding(10.dp)) {
         Row(
             modifier = Modifier
-                .fillMaxWidth(),
+                .fillMaxWidth()
+                .clickable {
+                    onParentClick()
+                },
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
@@ -320,7 +349,7 @@ fun CallLogItem(
                     },
                     contentDescription = null,
                     tint = Color.Gray,
-                    modifier = Modifier.size(25.dp)
+                    modifier = Modifier.size(20.dp)
                 )
                 Spacer(modifier = Modifier.width(15.dp))
                 Column {
@@ -411,7 +440,7 @@ fun CallLogItem(
                                     .size(25.dp)
                                     .padding(3.dp)
                                     .clickable {
-                                        onAddNote()
+                                        onAddNote(callLog)
                                     }
                             )
 
@@ -457,7 +486,10 @@ fun CallLogItem(
                 }
             }
         }
-        val note = callLog1.callLogs.callNote ?: ""
+        var note = callLog.callNote ?: ""
+        if (latestNote != null) {
+            note = latestNote.callNote ?: ""
+        }
         if (note.isEmpty()) {
             Spacer(modifier = Modifier.height(10.dp))
         } else {
@@ -467,7 +499,7 @@ fun CallLogItem(
                 modifier = Modifier
                     .padding(start = 40.dp, top = 8.dp, bottom = 8.dp, end = 10.dp)
                     .clickable {
-                        onAddNote()
+                        onAddNote(callLog)
                     }
             )
 
@@ -488,7 +520,7 @@ fun CustomSearchBar(
     onSearch: () -> Unit,
     onClear: () -> Unit,
     modifier: Modifier = Modifier,
-    emptyMsg:String = "Search notes, name, number..."
+    emptyMsg: String = "Search notes, name, number..."
 ) {
     Box(
         modifier = modifier

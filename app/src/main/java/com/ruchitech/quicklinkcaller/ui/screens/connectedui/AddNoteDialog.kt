@@ -21,11 +21,12 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.window.DialogProperties
+import com.ruchitech.quicklinkcaller.ui.screens.home.viewmodel.ChildCallLogVm
 import com.ruchitech.quicklinkcaller.ui.screens.home.viewmodel.HomeVm
 
 @Composable
 fun AddNoteDialog(
-    viewModel: HomeVm,
+    viewModel: Any,
     note: String? = "",
     onDismiss: () -> Unit,
     confirmButton: (note: String) -> Unit,
@@ -43,10 +44,10 @@ fun AddNoteDialog(
     // Ensure the keyboard controller is available
     DisposableEffect(dialogOpen) {
         if (dialogOpen) {
-            viewModel.openKeyboardWithoutFocus()
+           if (viewModel is HomeVm)  viewModel.openKeyboardWithoutFocus() else  (viewModel as ChildCallLogVm).openKeyboardWithoutFocus()
         } else {
             focusRequester.freeFocus()
-            viewModel.hideKeyboard()
+            if (viewModel is HomeVm)  viewModel.hideKeyboard() else  (viewModel as ChildCallLogVm).hideKeyboard()
         }
         onDispose {  }
     }
@@ -75,7 +76,7 @@ fun AddNoteDialog(
             OutlinedButton(
                 onClick = {
                     focusRequester.freeFocus()
-                    viewModel.hideKeyboard()
+                    if (viewModel is HomeVm)  viewModel.hideKeyboard() else  (viewModel as ChildCallLogVm).hideKeyboard()
                     dialogOpen = false
                    onDismiss()
                 },
@@ -87,7 +88,7 @@ fun AddNoteDialog(
                 onClick = {
                     if (!noteStr.isNullOrEmpty()) {
                         focusRequester.freeFocus()
-                        viewModel.hideKeyboard()
+                        if (viewModel is HomeVm)  viewModel.hideKeyboard() else  (viewModel as ChildCallLogVm).hideKeyboard()
                         dialogOpen = false
                         dialogOpen = false
                         confirmButton(noteStr ?: "")
@@ -98,7 +99,7 @@ fun AddNoteDialog(
         },
         onDismiss = {
             focusRequester.freeFocus()
-            viewModel.hideKeyboard()
+            if (viewModel is HomeVm)  viewModel.hideKeyboard() else  (viewModel as ChildCallLogVm).hideKeyboard()
             dialogOpen = false
             dialogOpen = false
             onDismiss()

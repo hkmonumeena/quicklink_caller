@@ -111,6 +111,18 @@ fun ShowContactsUi(viewModel: HomeVm) {
         }
 
         if (searchContacts.isEmpty() && query.isEmpty()) {
+            if (contacts.isEmpty()) {
+                item {
+                    Text(
+                        text = "No contacts added yet...",
+                        fontSize = 16.sp,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 25.dp),
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
             itemsIndexed(contacts) { index, contact ->
                 ContactItem(contact, onCallIcon = {
                     viewModel.makeCallToNum(contact.phoneNumber)
